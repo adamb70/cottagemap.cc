@@ -7,7 +7,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.select import Select
 
 import settings
-from data_objects import LateOffer
+from data_objects import OfferRow, REGION_TABLES
 from db_handler import SQL_Handler
 
 
@@ -27,24 +27,6 @@ class SpiderSettings:
 
 
 class Spider:
-    region_tables = {
-        'north east england': "northeastengland",
-        'north west england': "northwestengland",
-        'central england': "centralengland",
-        'north wales': "northwales",
-        'south wales': "southwales",
-        'eastern central england': "easterncentralengland",
-        'eastern england & east anglia': "eastanglia",
-        'south west england': "southwestengland",
-        'south and south east england': "southeastengland",
-        'south west scotland': "southwestscotland",
-        'south east scotland': "southeastscotland",
-        'west central scotland': "westcentralscotland",
-        'east central scotland': "eastcentralscotland",
-        'scottish highlands': "scottishhighlands",
-        'northern ireland': "northernireland",
-    }
-
     def __init__(self):
         self.sql = SQL_Handler()
         self.settings = SpiderSettings()
@@ -52,7 +34,7 @@ class Spider:
     def parse_results(self, search_results: WebElement):
         offers = []
         for cottage in search_results.find_elements_by_class_name('holiday-cottage-item'):
-            offer = LateOffer()
+            offer = OfferRow()
             offer.lat, offer.lon = cottage.find_element_by_class_name('mapLatLong').get_attribute(
                 'textContent').strip().split(',')
 
@@ -90,24 +72,9 @@ class Spider:
             offers.append(offer)
         return offers
 
-    def save_offers(self, offers, table_name):
-        row = """INSERT INTO {TABLE_NAME} (ID, title, lat, lon, location, url, slug, ref, description,
-              weekly_low, weekly_high, sleeps, bedrooms, dog, child, wifi, late_offer, late_nights,
-              late_price, late_savings_tag ) VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
-              %s,%s,%s,%s)""".format(TABLE_NAME=table_name)
-
-        for offer in offers:
-            self.sql.cur.execute(row, (
-                offer.title, offer.lat, offer.lon, offer.location, offer.url, offer.slug, offer.ref, offer.description,
-                offer.weekly_low, offer.weekly_high, offer.sleeps, offer.bedrooms, offer.dog, offer.child, offer.wifi,
-                offer.late_offer, offer.late_nights, offer.late_price, offer.late_savings_tag
-            ))
-
-        self.sql.commit()
-
     def populate_table(self, region):
         try:
-            TABLE_NAME = self.region_tables[region]
+            TABLE_NAME = REGION_TABLES[region]
         except KeyError:
             return 'Not a valid region'
 
@@ -177,12 +144,12 @@ class Spider:
         self.sql.create_table(table_name=TABLE_NAME)
         self.sql.clear_table(table_name=TABLE_NAME)
 
-        self.save_offers(offers, table_name=TABLE_NAME)
+        self.sql.save_offers(offers, table_name=TABLE_NAME)
 
         self.sql.close()
 
 
-for region in list(Spider.region_tables.keys())[0:1]:
+for region in list(REGION_TABLES.keys())[0:1]:
     print('Gathering late deals from', region)
     spider = Spider()
     spider.populate_table(region)

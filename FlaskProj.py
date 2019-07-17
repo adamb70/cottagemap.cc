@@ -1,30 +1,28 @@
-import MySQLdb
+import json
+from collections import defaultdict
 from flask import Flask, render_template
 
-
-locs = []
-def addLocs(table):
-    for n in table:
-        locs.append([n[1], n[2], n[10].replace(' ', '').split(',')[0], n[10].replace(' ', '').split(',')[1], n[3].replace('- \xa3', ''), n[7]])
-
-
-con = MySQLdb.connect('localhost', 'root', 'password', 'cottages')
-cur = con.cursor()
-
-
-cur.execute("""SHOW TABLES""")
-for table_name in cur.fetchall():
-    q = "SELECT * FROM %s" % table_name[0]
-    cur.execute(q)
-    results = cur.fetchall()
-    addLocs(results)
-
+import settings
+from db_handler import SQL_Handler
 
 app = Flask('CottageMap')
 
 @app.route('/')
 def hello_world():
-    return render_template('map.html', locs=locs)
+    sql = SQL_Handler()
+    regions = {}
+    for table_name in sql.get_tables():
+        cottages = sql.get_cottages(table_name[0])
+
+        serialized_cottages = []
+        for cottage in cottages.values():
+            serialized_cottages.append(cottage.serialize())
+
+        regions[table_name[0]] = serialized_cottages
+
+    regions = json.dumps(regions, ensure_ascii=False)
+
+    return render_template('map.html', regions=regions)
 
 
 if __name__ == '__main__':
