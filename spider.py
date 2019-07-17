@@ -1,214 +1,188 @@
-import requests
-from bs4 import BeautifulSoup
-import MySQLdb
+import time
+
+from selenium import webdriver
+from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException, NoSuchElementException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support.select import Select
+
+import settings
+from data_objects import LateOffer
+from db_handler import SQL_Handler
 
 
-def populate_table(region):
-    if region == 'north east england':
-        TABLE_NAME = "northeastengland"
-    elif region == 'north west england':
-        TABLE_NAME = "northwestengland"
-    elif region == 'central england':
-        TABLE_NAME = "centralengland"
-    elif region == 'north wales':
-        TABLE_NAME = "northwales"
-    elif region == 'south wales':
-        TABLE_NAME = "southwales"
-    elif region == 'eastern central england':
-        TABLE_NAME = "easterncentralengland"
-    elif region == 'eastern england & east anglia':
-        TABLE_NAME = "eastanglia"
-    elif region == 'south west england':
-        TABLE_NAME = "southwestengland"
-    elif region == 'south and south east england':
-        TABLE_NAME = "southeastengland"
-    elif region == 'south west scotland':
-        TABLE_NAME = "southwestscotland"
-    elif region == 'south east scotland':
-        TABLE_NAME = "southeastscotland"
-    elif region == 'west central scotland':
-        TABLE_NAME = "westcentralscotland"
-    elif region == 'east central scotland':
-        TABLE_NAME = "eastcentralscotland"
-    elif region == 'scottish highlands':
-        TABLE_NAME = "scottishhighlands"
-    elif region == 'northern ireland':
-        TABLE_NAME = "northernireland"
-    else:
-        return 'Not a valid region'
+class SpiderSettings:
+    defaults = {'wifi': True, 'parking': False, 'washing': False, 'kingsize': False, 'pool': False, 'hottub': False}
+
+    def __init__(self):
+        self.__dict__ = self.defaults
+
+    def __getattr__(self, item):
+        return self.__dict__.get(item.lower(), False)
+
+    def __setattr__(self, key, value):
+        key = key.lower()
+        self.__dict__[key] = value
+        super(SpiderSettings, self).__setattr__(key, value)
 
 
-    con = MySQLdb.connect('localhost', 'root', 'password', 'cottages')
-    cur = con.cursor()
+class Spider:
+    region_tables = {
+        'north east england': "northeastengland",
+        'north west england': "northwestengland",
+        'central england': "centralengland",
+        'north wales': "northwales",
+        'south wales': "southwales",
+        'eastern central england': "easterncentralengland",
+        'eastern england & east anglia': "eastanglia",
+        'south west england': "southwestengland",
+        'south and south east england': "southeastengland",
+        'south west scotland': "southwestscotland",
+        'south east scotland': "southeastscotland",
+        'west central scotland': "westcentralscotland",
+        'east central scotland': "eastcentralscotland",
+        'scottish highlands': "scottishhighlands",
+        'northern ireland': "northernireland",
+    }
 
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS %s (
-        ID INT UNIQUE NOT NULL AUTO_INCREMENT,
-        Name VARCHAR(500) NULL,
-        URL VARCHAR(500) NULL,
-        offer VARCHAR(500) NULL,
-        details VARCHAR(500) NULL,
-        nights VARCHAR(500) NULL,
-        price VARCHAR(500) NULL,
-        per_night INT NULL,
-        location VARCHAR(500) NULL,
-        ref VARCHAR(500) NULL,
-        LatLng VARCHAR(500) NULL,
-        PRIMARY KEY (ID)) """  % (TABLE_NAME,))
+    def __init__(self):
+        self.sql = SQL_Handler()
+        self.settings = SpiderSettings()
 
-    cleartable = "DELETE from %s" % (TABLE_NAME,)
-    resetcount = "ALTER TABLE %s AUTO_INCREMENT = 1" % (TABLE_NAME,)
+    def parse_results(self, search_results: WebElement):
+        offers = []
+        for cottage in search_results.find_elements_by_class_name('holiday-cottage-item'):
+            offer = LateOffer()
+            offer.lat, offer.lon = cottage.find_element_by_class_name('mapLatLong').get_attribute(
+                'textContent').strip().split(',')
 
-    cur.execute(cleartable)
-    cur.execute(resetcount)
-    con.commit()
+            title_info = cottage.find_element_by_css_selector('h3>a')
+            offer.title = title_info.text
 
+            offer.url = title_info.get_attribute('href')
+            offer.ref = offer.url.split('-ref')[-1]
+            offer.slug = offer.url.split('/')[-1].split('-ref')[0]
 
-    headers = {'User-Agent': 'Mozilla/5.0',
-               'content-type': 'application/json',
-               'Referer': 'https://www.independentcottages.co.uk/cottageAdvSearch.php'
-               }
-    payload = {'advUserSearch': region,
-               'cot': '',
-               'hotTub': '',
-               'sleeps': '2',
-               'romantic': '',
-               'newDogs': 'd',
-               'sky': '',
-               'changeoverDay': 'Any',
-               'accomType': 'd',
-               'bath': '',
-               'offRoadParking': '',
-               'pubNear': '',
-               'cdPlayer': '',
-               'swimmingPool': '',
-               'golf': '',
-               'nights': 'Nights',
-               'gamesRoom': '',
-               'searchType': 'lao',
-               'stables': '',
-               'realFire': '',
-               'tennis': '',
-               'stablingOnsite': '',
-               'microwave': '',
-               'children': '',
-               'washingMachine': '',
-               'piano': '',
-               'noRooms': 'Bedrooms',
-               'dishWasher': '',
-               'garden': '',
-               'beachNear': '',
-               'publicTransport': '',
-               'familyActivity': '',
-               'kingsizeBed': '',
-               'bikeStorage': '',
-               'smoking': 'd',
-               'ssg': 'd',
-               'tumbleDryer': '',
-               'waterside': '',
-               'groundFloorLiveSleep': '',
-               'wheelchairAccess': '',
-               'arrivalDate': 'dd%2Fmm%2fyyy',
-               'dvd': '',
-               'iPod': '',
-               'shower': '',
-               'broadband': '',
-               'farmHoliday': '',
-               'etcRating': '0',
-               'fishing': '',
-               'submitButton': 'Search'}
+            offer.location = cottage.find_element_by_css_selector('.loc-container>a').text
+            offer.description = cottage.find_element_by_css_selector('.cottage-img .para').text
 
-    def getdata(parsedhtml):
-        for result in parsedhtml.find_all('div', attrs={'class':'searchResult'}):
-            datadic = {}
-            datadic['LatLng'] = result.find('div', 'mapLatLong').text
+            regular_price = cottage.find_element_by_css_selector('.price-from-sec>.price').text.replace('£', '').replace(' all year', '')
+            offer.weekly_low = int(regular_price.split(' to ')[0])
+            offer.weekly_high = int(regular_price.split(' to ')[-1])
 
-            for each in result.find_all('a'):
-                if each.has_attr('title'):
-                    if each['title'].startswith('View'):
-                        link = each['href']
-                        datadic['URL'] = link
-                        datadic['ref'] = link.split('-ref')[-1]
-                        datadic['Name'] = link.split('/')[-1].split('-ref')[0].replace('-', ' ')
-                        datadic['location'] = link.split('.co.uk/')[-1].split('/')[0].replace('-', ' ')
-            texts = result.find_all('div', attrs={'class':'offerText'})
+            meta = cottage.find_element_by_class_name('products-meta').text.lower().strip().split('\n')[0].split('|')
+            offer.sleeps = meta[0].strip()
+            offer.bedrooms = meta[1].strip()
+            offer.dog = meta[2].strip() != 'no'
+            offer.child = meta[3].strip() != 'no'
+            offer.wifi = meta[4].strip() != 'no'
 
-            if len(texts) > 1:
-                offer = texts[0].getText()
-                datadic['offer'] = offer
-                datadic['price'] = offer.split(u's - £')[-1]
-                datadic['nights'] = offer.split(' for ')[-1].split(' nights -')[0]
-                datadic['per_night'] = int(datadic['price'])/int(datadic['nights'])
-                datadic['details'] = texts[1].getText()
+            # Late offer
+            offer_details = cottage.find_element_by_css_selector('.lao-strip .offer-block')
+            try:
+                offer.late_savings_tag = offer_details.find_element_by_class_name('tag').text
+            except NoSuchElementException:
+                offer.late_savings_tag = ""
+            offer.late_offer = offer_details.text.replace(offer.late_savings_tag, '')
+            offer.late_price = int(offer.late_offer.split(', £')[-1])
+            offer.late_nights = int(offer.late_offer.split(' for ')[-1].split(' night')[0])
 
-            else:
-                offer = texts[0].getText()
-                datadic['offer'] = offer
-                datadic['price'] = offer.split(u's - £')[-1]
-                datadic['nights'] = offer.split(' for ')[-1].split(' nights -')[0]
-                datadic['per_night'] = int(datadic['price'])/int(datadic['nights'])
-                datadic['details'] = ''
+            offers.append(offer)
+        return offers
 
-            #print datadic
-            logthis = "INSERT INTO {TABLE_NAME} (ID,Name,URL,offer,details,nights,price,per_night,location,ref,latlng) VALUES (NULL, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(TABLE_NAME=TABLE_NAME)
-            cur.execute(logthis, (datadic['Name'], datadic['URL'], datadic['offer'], datadic['details'], datadic['nights'],
-                                  datadic['price'], datadic['per_night'], datadic['location'], datadic['ref'], datadic['LatLng']))
+    def save_offers(self, offers, table_name):
+        row = """INSERT INTO {TABLE_NAME} (ID, title, lat, lon, location, url, slug, ref, description,
+              weekly_low, weekly_high, sleeps, bedrooms, dog, child, wifi, late_offer, late_nights,
+              late_price, late_savings_tag ) VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,
+              %s,%s,%s,%s)""".format(TABLE_NAME=table_name)
 
+        for offer in offers:
+            self.sql.cur.execute(row, (
+                offer.title, offer.lat, offer.lon, offer.location, offer.url, offer.slug, offer.ref, offer.description,
+                offer.weekly_low, offer.weekly_high, offer.sleeps, offer.bedrooms, offer.dog, offer.child, offer.wifi,
+                offer.late_offer, offer.late_nights, offer.late_price, offer.late_savings_tag
+            ))
 
-    session = requests.Session()
-    session.post('http://www.independentcottages.co.uk/cottageSearch.php', headers=headers, data=payload)
+        self.sql.commit()
 
-    url = 'http://www.independentcottages.co.uk/cottageSearch.php?s='
+    def populate_table(self, region):
+        try:
+            TABLE_NAME = self.region_tables[region]
+        except KeyError:
+            return 'Not a valid region'
 
-    request = session.get(url)
-    soup = BeautifulSoup(request.text, "html5lib")
+        chrome_options = Options()
+        chrome_options.binary_location = settings.GOOGLE_CHROME_BIN
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--no-sandbox')
+        driver = webdriver.Chrome(executable_path=settings.CHROMEDRIVER_PATH, options=chrome_options)
 
-    
-    noleft = soup.find('div', attrs={'id':'srHeaderLeft'}).getText()
-    start, end = noleft.split('page ')[1].split(' (')[0].split(' of ')
-    print(noleft)
+        # Request search page
+        driver.get('https://www.independentcottages.co.uk/cottageSearch.php#search_filter')
 
-    #get first page info while it's loaded
-    getdata(soup)
+        # Open filters
+        driver.find_element_by_id('opener-btn-side').click()
+        while len(driver.find_elements_by_css_selector('.accordion.active')) > 0:
+            try:
+                driver.find_element_by_css_selector('.accordion.active').click()
+                time.sleep(0.7)  # wait for animation to avoid misclicks
+            except (ElementClickInterceptedException, ElementNotInteractableException):
+                pass
 
-    #get page range
-    mod = range(20, (int(end))*20, 20)
+        # Fill fields
+        form = driver.find_element_by_id('update-results')
+        form.find_element_by_name('advUserSearch').send_keys(region)
+        Select(form.find_element_by_name('sleeps')).select_by_value('2')
+        form.find_element_by_id('searchTypeb').click()  # Select late only deals
 
-    #get every page after 1st one
-    for n in mod:
-        newurl = url + str(n)
-        
-        request = session.get(newurl)
-        newsoup = BeautifulSoup(request.text, "html5lib")
+        if self.settings.WIFI:
+            form.find_element_by_id('broadband').click()
+        if self.settings.PARKING:
+            form.find_element_by_id('offRoadParking').click()
+        if self.settings.WASHING:
+            form.find_element_by_id('washingMachine').click()
+        if self.settings.KINGSIZE:
+            form.find_element_by_id('kingsizeBed').click()
+        if self.settings.POOL:
+            form.find_element_by_id('swimmingPool').click()
+        if self.settings.HOTTUB:
+            form.find_element_by_id('hotTub').click()
 
-        getdata(newsoup)
+        # Submit form
+        form.find_element_by_class_name('btn-orange').click()
 
-    con.commit()
-    con.close()
+        offers = []
+        while True:
+            results = driver.find_element_by_id('start-of-results')
+
+            if results.text.lower().startswith('sorry'):
+                # No results found
+                print(f'No results for {region}')
+                break
+
+            offers.extend(self.parse_results(results))
+
+            # move to next page
+            try:
+                paginate_next = driver.find_element_by_id('pagination-list').find_elements_by_css_selector('li')[
+                    -1].find_element_by_css_selector('a')
+                if paginate_next.text.strip().lower().startswith('next'):
+                    paginate_next.click()
+                else:
+                    break
+            except:
+                # No pagination
+                break
+
+        self.sql.create_table(table_name=TABLE_NAME)
+        self.sql.clear_table(table_name=TABLE_NAME)
+
+        self.save_offers(offers, table_name=TABLE_NAME)
+
+        self.sql.close()
 
 
-
-
-regionlist = ['north west england',
-              'north east england',
-              'central england',
-              'north wales',
-              'south wales',
-              'eastern central england',
-              'eastern england & east anglia',
-              'south west england',
-              'south and south east england',
-              'south west scotland',
-              'south east scotland',
-              'west central scotland',
-              'east central scotland',
-              'scottish highlands',
-              'northern ireland'
-              ]
-
-for region in regionlist[0:1]:
+for region in list(Spider.region_tables.keys())[0:1]:
     print('Gathering late deals from', region)
-    try:
-        populate_table(region)
-    except IndexError:
-        print('No results for', region)
+    spider = Spider()
+    spider.populate_table(region)
