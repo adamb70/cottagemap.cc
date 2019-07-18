@@ -2,3 +2,4 @@ Flask==1.1.1
 Jinja2==2.10.1
 selenium==3.141.0
 mysqlclient==1.4.2.post1
+gunicorn==19.9.0
