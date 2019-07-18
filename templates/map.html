@@ -7,8 +7,9 @@
 		const regions = JSON.parse({{ regions|tojson }});
     </script>
 
-    <script src='https://api.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v1.0.0/mapbox-gl.css' rel='stylesheet'/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css" rel="stylesheet">
+    <script src='https://api.mapbox.com/mapbox-gl-js/v1.1.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v1.1.1/mapbox-gl.css' rel='stylesheet'/>
 
 
     <title>Map</title>
@@ -25,16 +26,81 @@
         }
 
         .mapboxgl-popup {
-            max-width: 300px !important;
+            max-height: 70vmax;
+            max-width: 280px !important;
         }
 
         .mapboxgl-popup-content {
             text-align: center;
             font-family: 'Open Sans', sans-serif;
+            overflow-y: auto;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 1px 40px -4px rgba(0, 0, 0, 0.08) !important;
+            margin: 3px 0;
+            padding: 10px;
+        }
+
+        .cottage-title {
+            margin: 5px 0 10px;
+        }
+
+        .cottage-title a {
+            color: #080808
+        }
+
+        .location {
+            color: #3e319e;
+            font-size: 1.05em;
+            text-decoration: none;
+        }
+
+        .location i {
+            margin-right: 0.5em;
+        }
+
+        .weekly-price {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .description {
+            margin: 5px 0;
+        }
+
+        .details {
+            font-size: 1.1em;
+            color: #222222;
+        }
+
+        .details .fa-times {
+            color: #dd2928;
+        }
+
+        .details .fa-check {
+            color: #63d64f;
+        }
+
+        .deal-box {
+            background-color: #d26660;
+            overflow: unset;
+            padding: 10px;
+            color: #fff;
+            text-decoration: none;
+        }
+        .deal-box span {
+            font-weight: 500;
+        }
+
+        .mapboxgl-popup-tip {
+            margin: -3px;
         }
 
         .mapboxgl-popup-close-button {
-            font-size: 20px;
+            font-size: 25px;
+        }
+
+        .popup-img {
+            max-width: 100%;
         }
     </style>
 
@@ -48,26 +114,81 @@
 	mapboxgl.accessToken = 'pk.eyJ1IjoiYWJsaW5kbWFuIiwiYSI6ImNqcmY1ZDd6cDBydWQ0M3A4OHJ4b2czZGwifQ.brwgWx9jn2ut0PAOqEookQ';
 	const map = new mapboxgl.Map({
 		container: 'map',
-		style: 'mapbox://styles/mapbox/light-v10',
-		{#style: 'mapbox://styles/mapbox/cj4k8wmwy5lbt2smsigkbh18e',#}
-		{#style: 'mapbox://styles/mapbox/cjvshts5l1et01coz11pa6jam',#}
+		//style: 'mapbox://styles/mapbox/light-v10',
+		style: 'mapbox://styles/mapbox/cj4k8wmwy5lbt2smsigkbh18e',
+		//style: 'mapbox://styles/mapbox/cjvshts5l1et01coz11pa6jam',
 		center: [-3.953423, 54.312727],
 		zoom: 5,
 	});
 
+	map.addControl(new mapboxgl.NavigationControl());
+
+	let format_boolean = function (bool) {
+		return bool ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>'
+	};
+
 	// init markers
 	for (let region in regions) {
+		let processed_lnglats = {};
 		for (let cottage of regions[region]) {
 
 			// create a HTML element for each feature
 			let el = document.createElement('div');
 			el.className = 'marker';
 
+			let lnglat = new mapboxgl.LngLat(cottage.lon, cottage.lat);
+			let offset_mult = 0;
+			if (lnglat in processed_lnglats) {
+				offset_mult = ++processed_lnglats[lnglat];
+				// offset lnglat a little bit if markers are on the same coordinates
+                lnglat = new mapboxgl.LngLat(parseFloat(cottage.lon)+(0.0001*offset_mult), parseFloat(cottage.lat)-(0.0001*offset_mult));
+			} else {
+				processed_lnglats[lnglat] = 0
+			}
+
 
 			new mapboxgl.Marker(el)
-				.setLngLat([cottage.lon, cottage.lat])
-				.setPopup(new mapboxgl.Popup({offset: 25}) // add popups
-					.setHTML('<h3>' + cottage.title + '</h3><p>' + cottage.description + '</p>'))
+				.setLngLat(lnglat)
+				.setPopup(new mapboxgl.Popup({offset: 25})
+					.on('open', function (pop) {
+						const _container = pop.target._container;
+
+						// attach late deals
+						for (let offer of cottage.late_offers) {
+							let deal_box = document.createElement('a');
+							deal_box.classList.add('deal-box', 'mapboxgl-popup-content');
+							deal_box.href = cottage.url + '#last-minute-offers';
+							deal_box.target = '_blank';
+							deal_box.innerHTML = '<span>Offer: </span>' + offer.offer;
+							_container.appendChild(deal_box);
+						}
+
+						// make sure dimensions are always even number and not a float, to avoid blurry text bug
+						let newWidth = _container.offsetWidth;
+						if (_container.offsetWidth % 2 !== 0)
+							newWidth++;
+						_container.style.width = newWidth + 'px';
+
+						let newHeight = _container.offsetHeight;
+						if (_container.offsetHeight % 2 !== 0)
+							newHeight++;
+						_container.style.height = newHeight + 'px';
+
+						// centre on marker
+						map.flyTo({center: this.getLngLat(), offset: [0, 250]});
+
+					})
+					.setHTML('<h3 class="cottage-title"><a href="' + cottage.url + '" target="target="_blank"">' + cottage.title + '</a></h3>'
+						+ '<a href="https://www.google.com/maps/search/?api=1&query=' + cottage.lat + ',' + cottage.lon
+                        + '" class="location" title="View on Google Maps" target="_blank"><i class="fas fa-map-marker-alt"></i>'
+                        + cottage.location + '</a><p class="description">' + cottage.description
+                        + '</p><div class="weekly-price">Weekly price £' + cottage.weekly_low + ' to £' + cottage.weekly_high
+                        + '</div><a href="' + cottage.url + '" target="target="_blank""><img class="popup-img" src="'
+                        + cottage.image + '"/></a><div class="details">'
+						+ '<i class="fas fa-bed" title="Sleeps"></i> ' + cottage.sleeps + ' | <i class="fas fa-door-open" title="Bedrooms"></i> ' +
+						cottage.bedrooms + ' | <i class="fas fa-dog" title="Dogs allowed"></i> ' + format_boolean(cottage.dog) +
+                        ' | <i class="fas fa-child" title="Child friendly"></i> ' + format_boolean(cottage.child) +
+                        ' | <i class="fas fa-wifi" title="Wifi"></i> ' + format_boolean(cottage.wifi)))
 				.addTo(map);
 
 		}
