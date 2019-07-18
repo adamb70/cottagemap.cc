@@ -1,15 +1,22 @@
 import time
+import urllib.request
 
 from selenium import webdriver
-from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException, NoSuchElementException
+from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException, \
+    NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 import settings
 from data_objects import OfferRow, REGION_TABLES
 from db_handler import SQL_Handler
 
+
+empty_b64_jpg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCACWASwDAREAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJ/4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/Z"
 
 class SpiderSettings:
     defaults = {'wifi': True, 'parking': False, 'washing': False, 'kingsize': False, 'pool': False, 'hottub': False}
@@ -31,7 +38,7 @@ class Spider:
         self.sql = SQL_Handler()
         self.settings = SpiderSettings()
 
-    def parse_results(self, search_results: WebElement):
+    def parse_results(self, search_results: WebElement, driver):
         offers = []
         for cottage in search_results.find_elements_by_class_name('holiday-cottage-item'):
             offer = OfferRow()
@@ -68,6 +75,51 @@ class Spider:
             offer.late_offer = offer_details.text.replace(offer.late_savings_tag, '')
             offer.late_price = int(offer.late_offer.split(', £')[-1])
             offer.late_nights = int(offer.late_offer.split(' for ')[-1].split(' night')[0])
+
+            # Image
+            js = """
+            let canvas = document.createElement('canvas');
+            let img = document.querySelector('#img-{ref} img');
+            img.scrollIntoView();
+            canvas.id = 'canvas-{ref}';
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // wait for image to load before adding it to canvas
+            img.onload = function() {{
+                // using canvas to generate a b64 dataurl without having to request the image a second time to download
+                document.body.appendChild(canvas);
+                let ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                let data = canvas.toDataURL('image/jpeg', 1.0);
+                let output = document.createElement('div');
+                output.id = 'output-{ref}';
+                output.setAttribute('dataurl', data);
+                img.parentNode.insertBefore(output, output.nextSibling);
+            }};
+            // if image has already loaded before attaching the listener, manually fire it
+            if (img.complete && img.naturalHeight !== 0) {{
+                let evt = document.createEvent('Event');
+                evt.initEvent('load', false, false);
+                img.dispatchEvent(evt);
+            }}
+            """.format(ref=offer.ref)
+            driver.execute_script(js)
+
+            try:
+                data_elem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, f'output-{offer.ref}')))
+                dataurl = data_elem.get_attribute('dataurl')
+                if dataurl == empty_b64_jpg:
+                    # image wasn't loaded properly
+                    dataurl = None
+            except TimeoutException:
+                dataurl = None
+
+            if dataurl:
+                response = urllib.request.urlopen(dataurl)
+                offer.image = response.read()
+                with open('image.png', 'wb') as rf:
+                    rf.write(urllib.request.urlopen(dataurl).read())
 
             offers.append(offer)
         return offers
@@ -127,7 +179,7 @@ class Spider:
                 print(f'No results for {region}')
                 break
 
-            offers.extend(self.parse_results(results))
+            offers.extend(self.parse_results(results, driver))
 
             # move to next page
             try:
