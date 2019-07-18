@@ -5,10 +5,10 @@ from flask import Flask, render_template
 import settings
 from db_handler import SQL_Handler
 
-app = Flask('CottageMap')
+cottages_map = Flask(__name__)
 
-@app.route('/')
-def hello_world():
+@cottages_map.route('/')
+def map_view():
     sql = SQL_Handler()
     regions = {}
     for table_name in sql.get_tables():
@@ -26,4 +26,4 @@ def hello_world():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    cottages_map.run(host='0.0.0.0')
