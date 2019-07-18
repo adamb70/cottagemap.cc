@@ -118,8 +118,6 @@ class Spider:
             if dataurl:
                 response = urllib.request.urlopen(dataurl)
                 offer.image = response.read()
-                with open('image.png', 'wb') as rf:
-                    rf.write(urllib.request.urlopen(dataurl).read())
 
             offers.append(offer)
         return offers

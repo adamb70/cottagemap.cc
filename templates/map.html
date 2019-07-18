@@ -178,12 +178,12 @@
 						map.flyTo({center: this.getLngLat(), offset: [0, 250]});
 
 					})
-					.setHTML('<h3 class="cottage-title"><a href="' + cottage.url + '" target="target="_blank"">' + cottage.title + '</a></h3>'
+					.setHTML('<h3 class="cottage-title"><a href="' + cottage.url + '" target="_blank">' + cottage.title + '</a></h3>'
 						+ '<a href="https://www.google.com/maps/search/?api=1&query=' + cottage.lat + ',' + cottage.lon
                         + '" class="location" title="View on Google Maps" target="_blank"><i class="fas fa-map-marker-alt"></i>'
                         + cottage.location + '</a><p class="description">' + cottage.description
                         + '</p><div class="weekly-price">Weekly price £' + cottage.weekly_low + ' to £' + cottage.weekly_high
-                        + '</div><a href="' + cottage.url + '" target="target="_blank""><img class="popup-img" src="'
+                        + '</div><a href="' + cottage.url + '" target="_blank"><img class="popup-img" src="'
                         + cottage.image + '"/></a><div class="details">'
 						+ '<i class="fas fa-bed" title="Sleeps"></i> ' + cottage.sleeps + ' | <i class="fas fa-door-open" title="Bedrooms"></i> ' +
 						cottage.bedrooms + ' | <i class="fas fa-dog" title="Dogs allowed"></i> ' + format_boolean(cottage.dog) +
