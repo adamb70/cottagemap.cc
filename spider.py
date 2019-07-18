@@ -13,10 +13,10 @@ from selenium.webdriver.common.by import By
 
 import settings
 from data_objects import OfferRow, REGION_TABLES
-from db_handler import SQL_Handler
-
+from db_handler import MySQL_Handler, Postgres_Handler
 
 empty_b64_jpg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCACWASwDAREAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJ/4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/Z"
+
 
 class SpiderSettings:
     defaults = {'wifi': True, 'parking': False, 'washing': False, 'kingsize': False, 'pool': False, 'hottub': False}
@@ -34,8 +34,11 @@ class SpiderSettings:
 
 
 class Spider:
-    def __init__(self):
-        self.sql = SQL_Handler()
+    def __init__(self, use_postgres=False):
+        if use_postgres:
+            self.sql = Postgres_Handler()
+        else:
+            self.sql = MySQL_Handler()
         self.settings = SpiderSettings()
 
     def parse_results(self, search_results: WebElement, driver):
@@ -191,8 +194,7 @@ class Spider:
                 # No pagination
                 break
 
-        self.sql.create_table(table_name=TABLE_NAME)
-        self.sql.clear_table(table_name=TABLE_NAME)
+        self.sql.reset_table(table_name=TABLE_NAME)
 
         self.sql.save_offers(offers, table_name=TABLE_NAME)
 
@@ -201,5 +203,5 @@ class Spider:
 
 for region in list(REGION_TABLES.keys())[0:1]:
     print('Gathering late deals from', region)
-    spider = Spider()
+    spider = Spider(use_postgres=True)
     spider.populate_table(region)

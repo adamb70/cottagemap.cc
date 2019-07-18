@@ -1,10 +1,11 @@
 import MySQLdb
+import psycopg2
 
 import settings
 from data_objects import OfferRow, LateOffer
 
 
-class SQL_Handler:
+class MySQL_Handler:
     def __init__(self):
         self.con = MySQLdb.connect(host=settings.SQL_HOST, user=settings.SQL_USER, password=settings.SQL_PASS,
                                    db=settings.SQL_DB, charset='utf8', use_unicode=True)
@@ -26,9 +27,9 @@ class SQL_Handler:
             weekly_high MEDIUMINT NULL,
             sleeps varchar(100) NULL,
             bedrooms varchar(100) NULL,
-            dog BOOL NULL,
-            child BOOL NULL,
-            wifi BOOL NULL,
+            dog BOOLEAN NULL,
+            child BOOLEAN NULL,
+            wifi BOOLEAN NULL,
             late_offer VARCHAR(500) NULL,
             late_nights SMALLINT NULL,
             late_price MEDIUMINT NULL,
@@ -36,10 +37,10 @@ class SQL_Handler:
             image MEDIUMBLOB NULL,
             PRIMARY KEY (ID)) """ % (table_name,))
 
-    def clear_table(self, table_name):
-        self.cur.execute("DELETE from %s" % (table_name,))
-        self.cur.execute("ALTER TABLE %s AUTO_INCREMENT = 1" % (table_name,))
+    def reset_table(self, table_name):
+        self.cur.execute(f"DROP TABLE IF EXISTS {table_name}")
         self.con.commit()
+        self.create_table(table_name)
 
     def commit(self):
         self.con.commit()
@@ -54,15 +55,15 @@ class SQL_Handler:
                 "late_savings_tag", "image"]
 
     def get_tables(self):
-        self.cur.execute("""SHOW TABLES""")
+        self.cur.execute("SHOW TABLES")
         return self.cur.fetchall()
 
     def save_offers(self, offers, table_name):
-        row = "INSERT INTO {TABLE_NAME} ({columns}) VALUES (NULL,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(
+        row = "INSERT INTO {TABLE_NAME} ({columns}) VALUES (DEFAULT,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(
             TABLE_NAME=table_name, columns=",".join(self.columns))
 
         for offer in offers:
-            self.cur.execute(row, vars(offer).values())
+            self.cur.execute(row, tuple(vars(offer).values()))
 
         self.commit()
 
@@ -95,3 +96,38 @@ class SQL_Handler:
 
         return cottages
 
+
+# noinspection PyMissingConstructor
+class Postgres_Handler(MySQL_Handler):
+    def __init__(self):
+        self.con = psycopg2.connect(settings.DATABASE_URL, sslmode='require')
+        self.cur = self.con.cursor()
+
+    def create_table(self, table_name):
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS %s (
+            ID SERIAL PRIMARY KEY,
+            title VARCHAR(500) NOT NULL,
+            lat DECIMAL(10, 8) NOT NULL,
+            lon DECIMAL(11, 8) NOT NULL,
+            location VARCHAR(500) NULL,
+            url VARCHAR(500) NOT NULL,
+            slug VARCHAR(500) NOT NULL,
+            ref VARCHAR(100) NOT NULL,
+            description TEXT NULL,
+            weekly_low INTEGER NULL,
+            weekly_high INTEGER NULL,
+            sleeps varchar(100) NULL,
+            bedrooms varchar(100) NULL,
+            dog BOOLEAN NULL,
+            child BOOLEAN NULL,
+            wifi BOOLEAN NULL,
+            late_offer VARCHAR(500) NULL,
+            late_nights SMALLINT NULL,
+            late_price INTEGER NULL,
+            late_savings_tag VARCHAR(100) NULL,
+            image BYTEA NULL) """ % (table_name,))
+
+    def get_tables(self):
+        self.cur.execute("select relname from pg_class where relkind='r' and relname !~ '^(pg_|sql_)';")
+        return self.cur.fetchall()
