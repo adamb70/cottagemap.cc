@@ -5,6 +5,7 @@ from db_handler import Postgres_Handler
 
 cottages_map = Flask(__name__)
 
+
 @cottages_map.route('/')
 def map_view():
     sql = Postgres_Handler()
@@ -24,4 +25,4 @@ def map_view():
 
 
 if __name__ == '__main__':
-    cottages_map.run(host='0.0.0.0')
+    cottages_map.run()
