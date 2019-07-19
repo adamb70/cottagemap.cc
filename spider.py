@@ -115,6 +115,11 @@ class Spider:
             """.format(ref=offer.ref)
             driver.execute_script(js)
 
+            # Get image url
+            img = cottage.find_element_by_css_selector(f'#img-{offer.ref} img')
+            offer.img_url = img.get_attribute('src')
+
+            # Download image as base64
             try:
                 data_elem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, f'output-{offer.ref}')))
                 dataurl = data_elem.get_attribute('dataurl')

@@ -20,7 +20,7 @@ def map_view():
 
         serialized_cottages = []
         for cottage in cottages.values():
-            serialized_cottages.append(cottage.serialize())
+            serialized_cottages.append(cottage.serialize(use_b64_image=False))
 
         regions[table_name[0]] = serialized_cottages
 

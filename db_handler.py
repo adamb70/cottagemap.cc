@@ -35,6 +35,7 @@ class MySQL_Handler:
             late_price MEDIUMINT NULL,
             late_savings_tag VARCHAR(100) NULL,
             image MEDIUMBLOB NULL,
+            img_url VARCHAR(500) NULL,
             PRIMARY KEY (ID)) """ % (table_name,))
 
     def reset_table(self, table_name):
@@ -52,14 +53,14 @@ class MySQL_Handler:
     def columns(self):
         return ["ID", "title", "lat", "lon", "location", "url", "slug", "ref", "description", "weekly_low",
                 "weekly_high", "sleeps", "bedrooms", "dog", "child", "wifi", "late_offer", "late_nights", "late_price",
-                "late_savings_tag", "image"]
+                "late_savings_tag", "image", "img_url"]
 
     def get_tables(self):
         self.cur.execute("SHOW TABLES")
         return self.cur.fetchall()
 
     def save_offers(self, offers, table_name):
-        row = "INSERT INTO {TABLE_NAME} ({columns}) VALUES (DEFAULT,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(
+        row = "INSERT INTO {TABLE_NAME} ({columns}) VALUES (DEFAULT,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(
             TABLE_NAME=table_name, columns=",".join(self.columns))
 
         for offer in offers:
@@ -126,7 +127,8 @@ class Postgres_Handler(MySQL_Handler):
             late_nights SMALLINT NULL,
             late_price INTEGER NULL,
             late_savings_tag VARCHAR(100) NULL,
-            image BYTEA NULL) """ % (table_name,))
+            image BYTEA NULL,
+            img_url VARCHAR(500) NULL) """ % (table_name,))
 
     def get_tables(self):
         self.cur.execute("select relname from pg_class where relkind='r' and relname !~ '^(pg_|sql_)';")

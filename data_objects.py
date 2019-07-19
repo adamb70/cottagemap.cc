@@ -7,7 +7,7 @@ empty_b64_jpg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAEBAQEB
 class OfferRow:
     def __init__(self, ID=None, title="", lat=None, lon=None, location="", url="", slug="", ref="", description="",
                  weekly_low=0, weekly_high=0, sleeps="", bedrooms="", dog=False, child=False, wifi=False, late_offer="",
-                 late_nights=0, late_price=0, late_savings_tag="", image=None):
+                 late_nights=0, late_price=0, late_savings_tag="", image=None, img_url=""):
         self.title = title
         self.lat = lat
         self.lon = lon
@@ -28,6 +28,7 @@ class OfferRow:
         self.late_price = late_price
         self.late_savings_tag = late_savings_tag
         self.image = image
+        self.img_url = img_url
 
     def to_cottage(self):
         var_dic = dict(vars(self))  # cast to dict to make copy, so pop() doesn't remove from main
@@ -40,7 +41,7 @@ class OfferRow:
 
 class CottageJSON:
     def __init__(self, title="", lat=None, lon=None, location="", url="", slug="", ref="", description="",
-                 weekly_low=0, weekly_high=0, sleeps="", bedrooms="", dog=False, child=False, wifi=False, image=None):
+                 weekly_low=0, weekly_high=0, sleeps="", bedrooms="", dog=False, child=False, wifi=False, image=None, img_url=""):
         self.title = title
         self.lat = lat
         self.lon = lon
@@ -58,22 +59,31 @@ class CottageJSON:
         self.wifi = wifi
         self.late_offers = []
         self.image = image
+        self.img_url = img_url
 
-    def serialize(self):
-        _vars = vars(self)
+    def serialize(self, use_b64_image=False):
+        # Make copy of vars
+        _vars = dict(vars(self))
         # Manually serialize non-serializable items
         _vars['late_offers'] = [vars(offer) for offer in self.late_offers]
         _vars['lat'] = str(self.lat)
         _vars['lon'] = str(self.lon)
-        try:
-            _vars['image'] = 'data:image/png;base64,{}'.format(base64.b64encode(self.image).decode())
-        except TypeError:
-            # Image was null
-            _vars['image'] = empty_b64_jpg
+
+        # Delete img_url from vars, will only use either b64 or url interchangeably
+        del _vars['img_url']
+        if use_b64_image:
+            try:
+                _vars['image'] = 'data:image/png;base64,{}'.format(base64.b64encode(self.image).decode())
+            except TypeError:
+                # Image was null
+                _vars['image'] = empty_b64_jpg
+        else:
+            _vars['image'] = self.img_url
+
         return _vars
 
-    def to_json(self):
-        return json.dumps(self.serialize())
+    def to_json(self, use_b64_image=False):
+        return json.dumps(self.serialize(use_b64_image))
 
 
 class LateOffer:
