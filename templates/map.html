@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <script type="text/javascript">
-		const regions = JSON.parse({{ regions|tojson }});
+		const REGIONS = JSON.parse({{ regions|tojson }});
     </script>
 
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css" rel="stylesheet">
@@ -114,6 +114,71 @@
         .popup-img {
             max-width: 100%;
         }
+
+        /* disable for debugging */
+        .marker {
+            background-color: transparent !important;
+        }
+
+        .northeastengland {
+            background-color: hsla(0, 50%, 50%, 0.3);
+        }
+
+        .northwestengland {
+            background-color: hsla(70, 97%, 57%, 0.3);
+        }
+
+        .centralengland {
+            background-color: hsla(197, 53%, 49%, 0.3);
+        }
+
+        .northwales {
+            background-color: hsla(299, 33%, 63%, 0.3);
+        }
+
+        .southwales {
+            background-color: hsla(50, 100%, 50%, 0.3);
+        }
+
+        .easterncentralengland {
+            background-color: hsla(0, 73%, 51%, 0.3);
+        }
+
+        .eastanglia {
+            background-color: hsla(0, 0%, 13%, 0.3);
+        }
+
+        .southwestengland {
+            background-color: hsla(33, 72%, 39%, 0.3);
+        }
+
+        .southeastengland {
+            background-color: hsla(185, 100%, 55%, 0.3);
+        }
+
+        .southwestscotland {
+            background-color: hsla(9, 100%, 78%, 0.3);
+        }
+
+        .southeastscotland {
+            background-color: hsla(250, 42%, 56%, 0.3);
+        }
+
+        .westcentralscotland {
+            background-color: hsla(242, 100%, 50%, 0.3);
+        }
+
+        .eastcentralscotland {
+            background-color: hsla(113, 100%, 37%, 0.3);
+        }
+
+        .scottishhighlands {
+            background-color: hsla(186, 100%, 87%, 0.3);
+        }
+
+        .northernireland {
+            background-color: hsla(125, 50%, 50%, 0.3);
+        }
     </style>
 
 
@@ -137,7 +202,7 @@
 	map.addControl(new mapboxgl.NavigationControl());
 
 	// Add geolocate control to the map.
-    map.addControl(new mapboxgl.GeolocateControl({
+	map.addControl(new mapboxgl.GeolocateControl({
 		positionOptions: {
 			enableHighAccuracy: true
 		},
@@ -146,16 +211,16 @@
 
 	// Add text search
 	map.addControl(new MapboxGeocoder({
-        accessToken: mapboxgl.accessToken,
-        countries: 'gb',
-        mapboxgl: mapboxgl
-    }), 'top-left');
+		accessToken: mapboxgl.accessToken,
+		countries: 'gb',
+		mapboxgl: mapboxgl
+	}), 'top-left');
 
-	let format_boolean = function (bool) {
+	const format_boolean = function (bool) {
 		return bool ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>'
 	};
 
-	let resize = function (container) {
+	const resize = function (container) {
 		// make sure dimensions are always even number and not a float, to avoid blurry text
 		let newWidth = container.offsetWidth;
 		if (container.offsetWidth % 2 !== 0)
@@ -170,14 +235,14 @@
 		container.style.maxHeight = newHeight + 'px';
 	};
 
-	// init markers
-	for (let region in regions) {
-		let processed_lnglats = {};
-		for (let cottage of regions[region]) {
+	const generate_markers = function (region) {
+		const generated_makers = [];
+		const processed_lnglats = {};
+		for (let cottage of REGIONS[region]) {
 
 			// create a HTML element for each feature
 			let el = document.createElement('div');
-			el.className = 'marker';
+			el.classList.add('marker', region);
 
 			let lnglat = new mapboxgl.LngLat(cottage.lon, cottage.lat);
 			let offset_mult = 0;
@@ -190,16 +255,16 @@
 			}
 
 
-			new mapboxgl.Marker(el)
+			let new_marker = new mapboxgl.Marker(el)
 				.setLngLat(lnglat)
 				.setPopup(new mapboxgl.Popup({offset: 25})
 					.on('open', function (pop) {
 						const _container = pop.target._container;
 
 						// set image url
-                        let img = _container.getElementsByClassName('popup-img')[0];
-                        // wait until image dimensions are available
-                        img.src = cottage.image;
+						let img = _container.getElementsByClassName('popup-img')[0];
+						// wait until image dimensions are available
+						img.src = cottage.image;
 						let wait = setInterval(function () {
 							let w = img.naturalWidth,
 								h = img.naturalHeight;
@@ -242,8 +307,34 @@
 						'<span class="detail-divider">|</span><i class="fas fa-wifi" title="Wifi"></i>' + format_boolean(cottage.wifi)))
 				.addTo(map);
 
+			generated_makers.push(new_marker);
 		}
-	}
+		return generated_makers
+	};
+
+	const genereate_all_markers = function () {
+		for (const region in REGIONS) {
+			REGION_MARKERS[region] = generate_markers(region);
+		}
+	};
+
+	const delete_region_markers = function (region) {
+		for (const marker of REGION_MARKERS[region]) {
+			marker.remove();
+		}
+		delete REGION_MARKERS[region]
+	};
+
+	const delete_all_markers = function () {
+		for (const region in REGIONS) {
+			delete_region_markers(region);
+		}
+	};
+
+
+	// init markers
+	const REGION_MARKERS = {};
+	genereate_all_markers();
 
 </script>
 
