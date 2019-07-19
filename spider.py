@@ -1,5 +1,6 @@
 import time
 import urllib.request
+from urllib.parse import urlparse
 
 from selenium import webdriver
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException, \
@@ -117,7 +118,9 @@ class Spider:
 
             # Get image url
             img = cottage.find_element_by_css_selector(f'#img-{offer.ref} img')
-            offer.img_url = img.get_attribute('src')
+            base_url = urlparse(driver.current_url).netloc
+            img_url = img.get_attribute('data-src')
+            offer.img_url = "https://" + base_url + img_url
 
             # Download image as base64
             try:
@@ -212,7 +215,7 @@ class Spider:
         self.sql.close()
 
 
-for region in list(REGION_TABLES.keys())[0:1]:
+for region in list(REGION_TABLES.keys()):
     print('Gathering late deals from', region)
     spider = Spider(use_postgres=True)
     spider.populate_table(region)
