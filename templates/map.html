@@ -155,6 +155,21 @@
 		return bool ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>'
 	};
 
+	let resize = function (container) {
+		// make sure dimensions are always even number and not a float, to avoid blurry text
+		let newWidth = container.offsetWidth;
+		if (container.offsetWidth % 2 !== 0)
+			newWidth++;
+		container.style.width = newWidth + 'px';
+		container.style.maxWidth = newWidth + 'px';
+
+		let newHeight = container.offsetHeight;
+		if (container.offsetHeight % 2 !== 0)
+			newHeight++;
+		container.style.height = newHeight + 'px';
+		container.style.maxHeight = newHeight + 'px';
+	};
+
 	// init markers
 	for (let region in regions) {
 		let processed_lnglats = {};
@@ -182,7 +197,18 @@
 						const _container = pop.target._container;
 
 						// set image url
-                        _container.getElementsByClassName('popup-img')[0].src = cottage.image;
+                        let img = _container.getElementsByClassName('popup-img')[0];
+                        // wait until image dimensions are available
+                        img.src = cottage.image;
+						let wait = setInterval(function () {
+							let w = img.naturalWidth,
+								h = img.naturalHeight;
+							if (w && h) {
+								clearInterval(wait);
+								// resize container
+								resize(_container);
+							}
+						}, 30);
 
 						// attach late deals
 						for (let offer of cottage.late_offers) {
@@ -193,17 +219,6 @@
 							deal_box.innerHTML = '<span>Offer: </span>' + offer.offer;
 							_container.appendChild(deal_box);
 						}
-
-						// make sure dimensions are always even number and not a float, to avoid blurry text bug
-						let newWidth = _container.offsetWidth;
-						if (_container.offsetWidth % 2 !== 0)
-							newWidth++;
-						_container.style.width = newWidth + 'px';
-
-						let newHeight = _container.offsetHeight;
-						if (_container.offsetHeight % 2 !== 0)
-							newHeight++;
-						_container.style.height = newHeight + 'px';
 
 						// centre on marker
 						map.flyTo({center: this.getLngLat(), offset: [0, 250]});
