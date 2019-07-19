@@ -181,6 +181,9 @@
 					.on('open', function (pop) {
 						const _container = pop.target._container;
 
+						// set image url
+                        _container.getElementsByClassName('popup-img')[0].src = cottage.image;
+
 						// attach late deals
 						for (let offer of cottage.late_offers) {
 							let deal_box = document.createElement('a');
@@ -211,8 +214,7 @@
 						+ '" class="location" title="View on Google Maps" target="' + cottage.ref + '_map"><i class="fas fa-map-marker-alt"></i>'
 						+ cottage.location + '</a><p class="description">' + cottage.description
 						+ '</p><div class="weekly-price">Weekly price £' + cottage.weekly_low + ' to £' + cottage.weekly_high
-						+ '</div><a href="' + cottage.url + '" target="' + cottage.ref + '"><img class="popup-img" src="'
-						+ cottage.image + '"/></a><div class="details">'
+						+ '</div><a href="' + cottage.url + '" target="' + cottage.ref + '"><img class="popup-img" src=""/></a><div class="details">'
 						+ '<i class="fas fa-bed" title="Sleeps"></i> ' + cottage.sleeps + '<span class="detail-divider">|</span><i class="fas fa-door-open" title="Bedrooms"></i> ' +
 						cottage.bedrooms + '<span class="detail-divider">|</span><i class="fas fa-dog" title="Dogs allowed"></i>' + format_boolean(cottage.dog) +
 						'<span class="detail-divider">|</span><i class="fas fa-child" title="Child friendly"></i>' + format_boolean(cottage.child) +
