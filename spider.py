@@ -12,10 +12,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
 import settings
-from data_objects import OfferRow, REGION_TABLES
+from data_objects import OfferRow, REGION_TABLES, empty_b64_jpg
 from db_handler import MySQL_Handler, Postgres_Handler
-
-empty_b64_jpg = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCACWASwDAREAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AJ/4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/Z"
 
 
 class SpiderSettings:
@@ -59,8 +57,16 @@ class Spider:
             offer.description = cottage.find_element_by_css_selector('.cottage-img .para').text
 
             regular_price = cottage.find_element_by_css_selector('.price-from-sec>.price').text.replace('£', '').replace(' all year', '')
-            offer.weekly_low = int(regular_price.split(' to ')[0])
-            offer.weekly_high = int(regular_price.split(' to ')[-1])
+            try:
+                offer.weekly_low = int(regular_price.split(' to ')[0])
+            except ValueError:
+                # Failed because price is text
+                offer.weekly_low = 0
+            try:
+                offer.weekly_high = int(regular_price.split(' to ')[-1])
+            except ValueError:
+                # Failed because price is text
+                offer.weekly_high = 0
 
             meta = cottage.find_element_by_class_name('products-meta').text.lower().strip().split('\n')[0].split('|')
             offer.sleeps = meta[0].strip()
@@ -85,12 +91,12 @@ class Spider:
             let img = document.querySelector('#img-{ref} img');
             img.scrollIntoView();
             canvas.id = 'canvas-{ref}';
-            canvas.width = img.width;
-            canvas.height = img.height;
             
             // wait for image to load before adding it to canvas
             img.onload = function() {{
                 // using canvas to generate a b64 dataurl without having to request the image a second time to download
+                canvas.width = img.width;
+                canvas.height = img.height;
                 document.body.appendChild(canvas);
                 let ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0);
