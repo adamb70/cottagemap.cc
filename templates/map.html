@@ -29,7 +29,7 @@
         }
 
         .mapboxgl-popup {
-            max-height: 70vmax;
+            max-height: 80vh;
             max-width: 280px !important;
         }
 
@@ -88,7 +88,7 @@
         }
 
         .details .detail-divider {
-            margin: 0 0.4em;
+            margin: 0 0.3em;
         }
 
         .deal-box {
@@ -220,8 +220,14 @@
 							_container.appendChild(deal_box);
 						}
 
-						// centre on marker
-						map.flyTo({center: this.getLngLat(), offset: [0, 250]});
+						// center on marker
+						let marker_rect = el.getBoundingClientRect();
+						let marker_center = marker_rect.top + (marker_rect.height / 2);
+						let offset_sign = -1;
+						if (marker_center > window.innerHeight / 2) {
+							offset_sign = 1;
+						}
+						map.flyTo({center: this.getLngLat(), offset: [0, window.innerHeight * 0.4 * offset_sign]});
 
 					})
 					.setHTML('<h3 class="cottage-title"><a href="' + cottage.url + '" target="' + cottage.ref + '">' + cottage.title + '</a></h3>'
