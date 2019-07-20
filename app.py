@@ -20,14 +20,14 @@ def connect_db():
 def map_view():
     db = connect_db()
     regions = {}
-    for table_name in db.get_tables():
-        cottages = db.get_cottages(table_name[0], use_b64_image=False)
+    for table_name in db.get_region_tables():
+        cottages = db.get_cottages(table_name, use_b64_image=False)
 
         serialized_cottages = []
         for cottage in cottages.values():
             serialized_cottages.append(cottage.serialize(use_b64_image=False))
 
-        regions[table_name[0]] = serialized_cottages
+        regions[table_name] = serialized_cottages
 
     regions = json.dumps(regions, ensure_ascii=False)
     region_groups = json.dumps(GROUPED_REGIONS)

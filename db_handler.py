@@ -2,7 +2,7 @@ import MySQLdb
 import psycopg2
 
 import settings
-from data_objects import OfferRow, LateOffer
+from data_objects import OfferRow, LateOffer, REGION_TABLES
 
 
 class MySQL_Handler:
@@ -38,6 +38,13 @@ class MySQL_Handler:
             img_url VARCHAR(500) NULL,
             PRIMARY KEY (ID)) """ % (table_name,))
 
+    def create_log_table(self):
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS log_table (
+            table_name VARCHAR(500) UNIQUE NOT NULL,
+            last_updated DATETIME NOT NULL,
+            PRIMARY KEY (table_name))""")
+
     def reset_table(self, table_name):
         """ Drops and recreates table. Use clear_table if the columns dont need changing. """
         self.cur.execute(f"DROP TABLE IF EXISTS {table_name}")
@@ -63,6 +70,21 @@ class MySQL_Handler:
     def get_tables(self):
         self.cur.execute("SHOW TABLES")
         return self.cur.fetchall()
+
+    def get_region_tables(self):
+        all_tables = [table[0] for table in self.get_tables()]
+        ret = []
+        for region in REGION_TABLES.values():
+            if region in all_tables:
+                ret.append(region)
+        return ret
+
+    def update_log(self, table_name):
+        self.create_log_table()
+        self.cur.execute(f"""
+        INSERT INTO log_table (table_name, last_updated) VALUES('{table_name}', NOW())
+        ON DUPLICATE KEY UPDATE last_updated=NOW()""")
+        self.commit()
 
     def save_offers(self, offers, table_name):
         row = "INSERT INTO {TABLE_NAME} ({columns}) VALUES (DEFAULT,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(
@@ -142,6 +164,19 @@ class Postgres_Handler(MySQL_Handler):
             late_savings_tag VARCHAR(100) NULL,
             image BYTEA NULL,
             img_url VARCHAR(500) NULL) """ % (table_name,))
+
+    def create_log_table(self):
+        self.cur.execute("""
+            CREATE TABLE IF NOT EXISTS log_table (
+            table_name VARCHAR(500) PRIMARY KEY NOT NULL ,
+            last_updated TIMESTAMP NOT NULL)""")
+
+    def update_log(self, table_name):
+        self.create_log_table()
+        self.cur.execute(f"""
+        INSERT INTO log_table (table_name, last_updated) VALUES('{table_name}', NOW())
+        ON CONFLICT (table_name) DO UPDATE SET last_updated=NOW()""")
+        self.commit()
 
     def get_tables(self):
         self.cur.execute("select relname from pg_class where relkind='r' and relname !~ '^(pg_|sql_)';")
