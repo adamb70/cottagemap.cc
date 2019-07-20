@@ -3,6 +3,7 @@ from flask import Flask, render_template
 
 import db_handler
 import settings
+from data_objects import GROUPED_REGIONS
 
 cottages_map = Flask(__name__)
 
@@ -25,8 +26,8 @@ def map_view():
         regions[table_name[0]] = serialized_cottages
 
     regions = json.dumps(regions, ensure_ascii=False)
-
-    return render_template('map.html', regions=regions)
+    region_groups = json.dumps(GROUPED_REGIONS)
+    return render_template('map.html', regions=regions, region_groups=region_groups)
 
 
 if __name__ == '__main__':
