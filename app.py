@@ -7,14 +7,18 @@ from data_objects import GROUPED_REGIONS
 
 cottages_map = Flask(__name__)
 
-if settings.DB_TYPE == 'postgres':
-    db = db_handler.Postgres_Handler()
-elif settings.DB_TYPE == 'mysql':
-    db = db_handler.MySQL_Handler()
+
+def connect_db():
+    if settings.DB_TYPE == 'postgres':
+        db = db_handler.Postgres_Handler()
+    elif settings.DB_TYPE == 'mysql':
+        db = db_handler.MySQL_Handler()
+    return db
 
 
 @cottages_map.route('/')
 def map_view():
+    db = connect_db()
     regions = {}
     for table_name in db.get_tables():
         cottages = db.get_cottages(table_name[0])
@@ -27,6 +31,7 @@ def map_view():
 
     regions = json.dumps(regions, ensure_ascii=False)
     region_groups = json.dumps(GROUPED_REGIONS)
+    db.close()
     return render_template('map.html', regions=regions, region_groups=region_groups)
 
 

@@ -208,6 +208,7 @@ class Spider:
                 # No pagination
                 break
 
+        print('saving to db...')
         self.sql.clear_table(table_name=TABLE_NAME)
 
         self.sql.save_offers(offers, table_name=TABLE_NAME)
