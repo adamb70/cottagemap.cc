@@ -40,7 +40,7 @@ class Spider:
             self.sql = MySQL_Handler()
         self.settings = SpiderSettings()
 
-    def parse_results(self, search_results: WebElement, driver):
+    def parse_results(self, search_results: WebElement, driver, get_b64_images=True):
         offers = []
         for cottage in search_results.find_elements_by_class_name('holiday-cottage-item'):
             offer = OfferRow()
@@ -86,60 +86,61 @@ class Spider:
             offer.late_price = int(offer.late_offer.split(', £')[-1])
             offer.late_nights = int(offer.late_offer.split(' for ')[-1].split(' night')[0])
 
-            # Image
-            js = """
-            let canvas = document.createElement('canvas');
-            let img = document.querySelector('#img-{ref} img');
-            img.scrollIntoView();
-            canvas.id = 'canvas-{ref}';
-            
-            // wait for image to load before adding it to canvas
-            img.onload = function() {{
-                // using canvas to generate a b64 dataurl without having to request the image a second time to download
-                canvas.width = img.width;
-                canvas.height = img.height;
-                document.body.appendChild(canvas);
-                let ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
-                let data = canvas.toDataURL('image/jpeg', 1.0);
-                let output = document.createElement('div');
-                output.id = 'output-{ref}';
-                output.setAttribute('dataurl', data);
-                img.parentNode.insertBefore(output, output.nextSibling);
-            }};
-            // if image has already loaded before attaching the listener, manually fire it
-            if (img.complete && img.naturalHeight !== 0) {{
-                let evt = document.createEvent('Event');
-                evt.initEvent('load', false, false);
-                img.dispatchEvent(evt);
-            }}
-            """.format(ref=offer.ref)
-            driver.execute_script(js)
-
             # Get image url
             img = cottage.find_element_by_css_selector(f'#img-{offer.ref} img')
             base_url = urlparse(driver.current_url).netloc
             img_url = img.get_attribute('data-src')
             offer.img_url = "https://" + base_url + img_url
 
-            # Download image as base64
-            try:
-                data_elem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, f'output-{offer.ref}')))
-                dataurl = data_elem.get_attribute('dataurl')
-                if dataurl == empty_b64_jpg:
-                    # image wasn't loaded properly
-                    dataurl = None
-            except TimeoutException:
-                dataurl = None
+            if get_b64_images:
+                # Image
+                js = """
+                let canvas = document.createElement('canvas');
+                let img = document.querySelector('#img-{ref} img');
+                img.scrollIntoView();
+                canvas.id = 'canvas-{ref}';
+                
+                // wait for image to load before adding it to canvas
+                img.onload = function() {{
+                    // using canvas to generate a b64 dataurl without having to request the image a second time to download
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    document.body.appendChild(canvas);
+                    let ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    let data = canvas.toDataURL('image/jpeg', 1.0);
+                    let output = document.createElement('div');
+                    output.id = 'output-{ref}';
+                    output.setAttribute('dataurl', data);
+                    img.parentNode.insertBefore(output, output.nextSibling);
+                }};
+                // if image has already loaded before attaching the listener, manually fire it
+                if (img.complete && img.naturalHeight !== 0) {{
+                    let evt = document.createEvent('Event');
+                    evt.initEvent('load', false, false);
+                    img.dispatchEvent(evt);
+                }}
+                """.format(ref=offer.ref)
+                driver.execute_script(js)
 
-            if dataurl:
-                response = urllib.request.urlopen(dataurl)
-                offer.image = response.read()
+                # Download image as base64
+                try:
+                    data_elem = WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, f'output-{offer.ref}')))
+                    dataurl = data_elem.get_attribute('dataurl')
+                    if dataurl == empty_b64_jpg:
+                        # image wasn't loaded properly
+                        dataurl = None
+                except TimeoutException:
+                    dataurl = None
+
+                if dataurl:
+                    response = urllib.request.urlopen(dataurl)
+                    offer.image = response.read()
 
             offers.append(offer)
         return offers
 
-    def populate_table(self, region):
+    def populate_table(self, region, get_b64_images=True):
         try:
             TABLE_NAME = REGION_TABLES[region]
         except KeyError:
@@ -194,7 +195,7 @@ class Spider:
                 print(f'No results for {region}')
                 break
 
-            offers.extend(self.parse_results(results, driver))
+            offers.extend(self.parse_results(results, driver, get_b64_images))
 
             # move to next page
             try:
@@ -219,4 +220,4 @@ class Spider:
 for region in list(REGION_TABLES.keys()):
     print('Gathering late deals from', region)
     spider = Spider(use_postgres=True)
-    spider.populate_table(region)
+    spider.populate_table(region, get_b64_images=False)

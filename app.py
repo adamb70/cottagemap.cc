@@ -21,7 +21,7 @@ def map_view():
     db = connect_db()
     regions = {}
     for table_name in db.get_tables():
-        cottages = db.get_cottages(table_name[0])
+        cottages = db.get_cottages(table_name[0], use_b64_image=False)
 
         serialized_cottages = []
         for cottage in cottages.values():

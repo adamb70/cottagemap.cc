@@ -72,21 +72,29 @@ class MySQL_Handler:
             self.cur.execute(row, tuple(vars(offer).values()))
 
         self.commit()
+        self.update_log(table_name)
 
-    def load_offers(self, table_name):
-        q = "SELECT * FROM %s" % table_name
+    def load_offers(self, table_name, use_b64_image=False):
+        excludes = ['ID']
+        if not use_b64_image:
+            excludes.append('image')
+        col_list = [col for col in self.columns if col not in excludes]
+        columns = ', '.join(col_list)
+
+        q = f"SELECT {columns} FROM {table_name}"
         self.cur.execute(q)
         rows = self.cur.fetchall()
 
         offers = []
         for r in rows:
-            offer = OfferRow(*r)
+            dic = dict(zip(col_list, r))
+            offer = OfferRow(**dic)
             offers.append(offer)
         return offers
 
-    def get_cottages(self, table_name):
+    def get_cottages(self, table_name, use_b64_image=False):
         cottages = {}
-        for offer in self.load_offers(table_name):
+        for offer in self.load_offers(table_name, use_b64_image=use_b64_image):
             try:
                 cottage = cottages[offer.ref]
             except KeyError:
