@@ -339,11 +339,21 @@
             }
         }
 
+        outside_click(event) {
+            if (!this._container.contains(event.target)) {
+                this._selectlist.classList.remove('open');
+                document.removeEventListener('click', this._bound_listener)
+            }
+        }
+
         on_button_click() {
 			if (this._selectlist.classList.contains('open')) {
-				this._selectlist.classList.remove('open')
+				this._selectlist.classList.remove('open');
+       			document.removeEventListener('click', this._bound_listener)
             } else {
-				this._selectlist.classList.add('open')
+				this._selectlist.classList.add('open');
+				this._bound_listener = this.outside_click.bind(this);
+       			document.addEventListener('click', this._bound_listener)
             }
         }
 	}
