@@ -208,7 +208,7 @@ class Spider:
                 # No pagination
                 break
 
-        self.sql.reset_table(table_name=TABLE_NAME)
+        self.sql.clear_table(table_name=TABLE_NAME)
 
         self.sql.save_offers(offers, table_name=TABLE_NAME)
 

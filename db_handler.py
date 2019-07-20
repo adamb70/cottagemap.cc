@@ -39,9 +39,15 @@ class MySQL_Handler:
             PRIMARY KEY (ID)) """ % (table_name,))
 
     def reset_table(self, table_name):
+        """ Not able to drop table if client connected.
+         Use clear_table if the columns dont need changing. """
         self.cur.execute(f"DROP TABLE IF EXISTS {table_name}")
         self.con.commit()
         self.create_table(table_name)
+
+    def clear_table(self, table_name):
+        self.cur.execute(f"TRUNCATE TABLE {table_name}")
+        self.con.commit()
 
     def commit(self):
         self.con.commit()
