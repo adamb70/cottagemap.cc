@@ -285,7 +285,13 @@
 			for (let region_group in this.options.region_groups) {
 				const label = document.createElement('div');
 				label.setAttribute('data-region', region_group);
-                label.innerHTML = region_group;
+				let count = 0;
+
+				for (let region of this.options.region_groups[region_group]) {
+					count += REGIONS[region].length;
+                }
+
+                label.innerHTML = region_group + ' (' + count + ')';
 				if (this.options.visible_regions.includes(region_group)) {
 					label.classList.add('checked');
                 }
