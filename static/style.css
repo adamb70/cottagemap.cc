@@ -1,0 +1,208 @@
+#layers-button {
+    background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' %3F%3E%3Csvg id='Layer_1' version='1.1' viewBox='0 0 30 30' fill='%23333' xml:space='preserve' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Cg%3E%3Cg%3E%3Cpath d='M26,9c0-0.419-0.259-0.776-0.625-0.924l-9.459-4.854h-0.018C15.627,3.085,15.325,3,15,3s-0.627,0.085-0.898,0.222h-0.018 L4.625,8.076C4.259,8.224,4,8.581,4,9c0,0.416,0.255,0.772,0.617,0.923v0.02l9.474,4.838l0.009-0.004 C14.372,14.915,14.674,15,15,15s0.628-0.085,0.9-0.223l0.009,0.004l9.474-4.838v-0.02C25.745,9.772,26,9.416,26,9z'/%3E%3C/g%3E%3C/g%3E%3Cpath d='M25.375,14.076l-1.851-0.95c-2.905,1.487-6.87,3.511-6.916,3.528C16.093,16.884,15.553,17,15,17 c-0.555,0-1.096-0.117-1.613-0.348c-0.044-0.016-4.005-2.038-6.911-3.526l-1.851,0.95C4.259,14.224,4,14.581,4,15 c0,0.416,0.255,0.772,0.617,0.923v0.02l9.474,4.838l0.009-0.004C14.372,20.915,14.674,21,15,21s0.628-0.085,0.9-0.223l0.009,0.004 l9.474-4.838v-0.02C25.745,15.772,26,15.416,26,15C26,14.581,25.741,14.224,25.375,14.076z'/%3E%3Cpath d='M25.375,20.076l-1.851-0.95c-2.905,1.487-6.87,3.511-6.916,3.528C16.093,22.884,15.553,23,15,23 c-0.555,0-1.096-0.117-1.613-0.348c-0.044-0.016-4.005-2.038-6.911-3.526l-1.851,0.95C4.259,20.224,4,20.581,4,21 c0,0.416,0.255,0.772,0.617,0.923v0.02l9.474,4.838l0.009-0.004C14.372,26.915,14.674,27,15,27s0.628-0.085,0.9-0.223l0.009,0.004 l9.474-4.838v-0.02C25.745,21.772,26,21.416,26,21C26,20.581,25.741,20.224,25.375,20.076z'/%3E%3C/svg%3E");
+    background-origin: content-box;
+    padding: 2px;
+}
+
+#layer-select {
+    position: relative;
+    top: -40px;
+    right: 40px;
+    background-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 10px 2px rgba(0, 0, 0, .1);
+    border-radius: 4px;
+    display: none;
+}
+
+#layer-select.open {
+    display: block;
+}
+
+#layer-select div {
+    display: block;
+    padding: 10px;
+    cursor: pointer;
+    text-transform: capitalize;
+    background-color: rgba(240, 233, 216, 0.6);
+    border-bottom: solid 1px rgba(202, 202, 202, 0.6);
+}
+
+#layer-select div:last-of-type {
+    border: none;
+}
+
+#layer-select div:hover {
+    background-color: rgba(238, 196, 139, 0.6);
+}
+
+#layer-select div.checked {
+    background-color: rgba(90, 157, 218, 0.6);
+}
+
+#layer-select div.checked:hover {
+    background-color: rgba(45, 125, 200, 0.6);
+}
+
+#layer-select div input {
+    display: none;
+}
+
+.marker {
+    background-size: cover;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.mapboxgl-popup {
+    max-height: 75vh;
+    max-width: 280px !important;
+}
+
+.mapboxgl-popup-content {
+    text-align: center;
+    font-family: 'Open Sans', sans-serif;
+    overflow-y: auto;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 1px 40px -4px rgba(0, 0, 0, 0.08) !important;
+    margin: 3px 0;
+    padding: 10px;
+}
+
+.cottage-title {
+    margin: 5px 0 10px;
+}
+
+.cottage-title a {
+    color: #080808
+}
+
+.location {
+    color: #3e319e;
+    font-size: 1.05em;
+    text-decoration: none;
+}
+
+.location i {
+    margin-right: 0.5em;
+}
+
+.weekly-price {
+    font-size: 1.1em;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.description {
+    margin: 5px 0;
+}
+
+.details {
+    font-size: 1.1em;
+    color: #222222;
+}
+
+.details .fa-times {
+    color: #dd2928;
+}
+
+.details .fa-check {
+    color: #63d64f;
+}
+
+.details i {
+    margin: 0 0.2em;
+}
+
+.details .detail-divider {
+    margin: 0 0.3em;
+}
+
+.deal-box {
+    background-color: #d26660;
+    overflow: unset;
+    padding: 10px;
+    color: #fff;
+    text-decoration: none;
+}
+
+.deal-box span {
+    font-weight: 500;
+}
+
+.mapboxgl-popup-tip {
+    margin: -3px;
+}
+
+.mapboxgl-popup-close-button {
+    font-size: 25px;
+}
+
+.popup-img {
+    max-width: 100%;
+}
+
+/* disable for debugging */
+.marker {
+    background-color: transparent !important;
+}
+
+.northeastengland {
+    background-color: hsla(0, 50%, 50%, 0.3);
+}
+
+.northwestengland {
+    background-color: hsla(70, 97%, 57%, 0.3);
+}
+
+.centralengland {
+    background-color: hsla(197, 53%, 49%, 0.3);
+}
+
+.northwales {
+    background-color: hsla(299, 33%, 63%, 0.3);
+}
+
+.southwales {
+    background-color: hsla(50, 100%, 50%, 0.3);
+}
+
+.easterncentralengland {
+    background-color: hsla(0, 73%, 51%, 0.3);
+}
+
+.eastanglia {
+    background-color: hsla(0, 0%, 13%, 0.3);
+}
+
+.southwestengland {
+    background-color: hsla(33, 72%, 39%, 0.3);
+}
+
+.southeastengland {
+    background-color: hsla(185, 100%, 55%, 0.3);
+}
+
+.southwestscotland {
+    background-color: hsla(9, 100%, 78%, 0.3);
+}
+
+.southeastscotland {
+    background-color: hsla(250, 42%, 56%, 0.3);
+}
+
+.westcentralscotland {
+    background-color: hsla(242, 100%, 50%, 0.3);
+}
+
+.eastcentralscotland {
+    background-color: hsla(113, 100%, 37%, 0.3);
+}
+
+.scottishhighlands {
+    background-color: hsla(186, 100%, 87%, 0.3);
+}
+
+.northernireland {
+    background-color: hsla(125, 50%, 50%, 0.3);
+}

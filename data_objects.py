@@ -115,7 +115,7 @@ GROUPED_REGIONS = {
     'north west england': [REGION_TABLES['north west england']],
     'north east england': [REGION_TABLES['north east england']],
     'wales': [REGION_TABLES['north wales'], REGION_TABLES['south wales']],
-    'northern ireland': [REGION_TABLES['north wales']],
+    'northern ireland': [REGION_TABLES['northern ireland']],
     'central england': [REGION_TABLES['central england'], REGION_TABLES['eastern central england']],
     'south east england': [REGION_TABLES['eastern england & east anglia'], REGION_TABLES['south and south east england']],
     'south west england': [REGION_TABLES['south west england']],
