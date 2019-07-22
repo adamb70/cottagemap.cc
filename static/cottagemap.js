@@ -40,6 +40,7 @@
 			this._selectlist = document.createElement('div');
 			this._selectlist.id = 'layer-select';
 			this._selectlist.className = 'mapboxgl-ctrl';
+			this._selectlist.addEventListener('animationend', this.selectlist_animation_end.bind(this));
 
 			for (let region_group in this.options.region_groups) {
 				const label = document.createElement('div');
@@ -98,19 +99,34 @@
             }
         }
 
+        selectlist_animation_end() {
+			if (this._container.classList.contains('open')) {
+				// opening
+				this._selectlist.classList.remove('fadeInLayerSelect')
+			} else {
+				// closing
+				this._selectlist.classList.remove('fadeOutLayerSelect')
+			}
+		}
+
         outside_click(event) {
             if (!this._container.contains(event.target)) {
-                this._selectlist.classList.remove('open');
+                this._container.classList.remove('open');
+				this._selectlist.classList.add('fadeOutLayerSelect');
                 document.removeEventListener('click', this._bound_listener)
             }
         }
 
         on_button_click() {
-			if (this._selectlist.classList.contains('open')) {
-				this._selectlist.classList.remove('open');
-       			document.removeEventListener('click', this._bound_listener)
+			if (this._container.classList.contains('open')) {
+				// close
+				this._container.classList.remove('open');
+				this._selectlist.classList.add('fadeOutLayerSelect');
+				document.removeEventListener('click', this._bound_listener)
             } else {
-				this._selectlist.classList.add('open');
+				// open
+				this._container.classList.add('open');
+				this._selectlist.classList.add('fadeInLayerSelect');
 				this._bound_listener = this.outside_click.bind(this);
        			document.addEventListener('click', this._bound_listener)
             }
