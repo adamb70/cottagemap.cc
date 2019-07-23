@@ -18,6 +18,13 @@ def connect_db():
     return db
 
 
+@cottages_map.after_request
+def add_header(response):
+    # 43200 is default, but leaving this here for easier changing in the future
+    response.cache_control.max_age = 43200
+    return response
+
+
 @cottages_map.route('/')
 def map_view():
     db = connect_db()

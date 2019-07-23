@@ -1,3 +1,11 @@
+	const hashCode = s => {
+		let h, i;
+		for (i = h = 0; i < s.length; i++) {
+			h = Math.imul(31, h) + s.charCodeAt(i) | 0;
+		}
+		return h;
+	};
+
 	// Add zoom control
 	map.addControl(new mapboxgl.NavigationControl());
 
@@ -68,7 +76,11 @@
 			// build empty lists for regions that aren't visible yet
 			for (const region in REGIONS) {
                 REGION_MARKERS[region] = [];
+                if (stored_viewed[region] === undefined) {
+					stored_viewed[region] = {}
+				}
             }
+			localStorage.setItem('viewedCottages', JSON.stringify(stored_viewed));
 
 			for (let selected of this.options.visible_regions) {
 				for (let region of this.options.region_groups[selected]) {
@@ -164,7 +176,24 @@
 
 			// create a HTML element for each feature
 			let el = document.createElement('div');
-			el.classList.add('marker', region);
+			el.classList.add('marker', region, 'ref-'+cottage.ref);
+
+			const viewed_data = stored_viewed[region][cottage.ref];
+			if (viewed_data) {
+				el.classList.add('viewed');
+
+				for (let offer of cottage.late_offers) {
+					let hash = hashCode(offer.offer);
+					if (!viewed_data[0].includes(hash)) {
+						// job has a new offer
+						el.classList.remove('viewed');
+						el.classList.add('new');
+						el.innerHTML = '<span class="new-deal" title="New offer since you last clicked this property"><i class="fas fa-star-of-life"></i></span>';
+						break;
+					}
+				}
+
+			}
 
 			let lnglat = new mapboxgl.LngLat(cottage.lon, cottage.lat);
 			let offset_mult = 0;
@@ -197,15 +226,51 @@
 							}
 						}, 30);
 
+						stored_viewed = localStorage.getItem('viewedCottages');
+						stored_viewed  = stored_viewed ? JSON.parse(stored_viewed) : {};
+
+						if (typeof stored_viewed[region] === 'undefined') {
+							stored_viewed[region] = {};
+						}
+
+						const viewed_cottage = stored_viewed[region][cottage.ref];
+						let stored_deals, time;
+						if (typeof viewed_cottage !== 'undefined') {
+							stored_deals = viewed_cottage[0];
+							//time = new Date(viewed_cottage[1]);
+						}
+
+						//if (time && new Date().getTime() > time.getTime()) {
+							// do stuff with the time?
+						//}
+
+						let flag = false;
+						const new_deals = [];
 						// attach late deals
 						for (let offer of cottage.late_offers) {
 							let deal_box = document.createElement('a');
 							deal_box.classList.add('deal-box', 'mapboxgl-popup-content');
 							deal_box.href = cottage.url + '#last-minute-offers';
 							deal_box.target = cottage.ref;
-							deal_box.innerHTML = '<span>Offer: </span>' + offer.offer;
+
+							const offer_hash = hashCode(offer.offer);
+							if (stored_deals && !stored_deals.includes(offer_hash))
+							{
+								deal_box.innerHTML = '<span class="new-deal" title="New since you last viewed"><i class="fas fa-star-of-life"></i></span>';
+								flag = true;
+							}
+
+							deal_box.innerHTML += '<span>Offer: </span>' + offer.offer;
 							_container.appendChild(deal_box);
+							new_deals.push(offer_hash);
 						}
+
+						// store cottage offers as visited
+						stored_viewed[region][cottage.ref] = [new_deals, new Date()];
+						localStorage.setItem('viewedCottages', JSON.stringify(stored_viewed));
+						el.classList.add('viewed');
+						el.classList.remove('new');
+						el.innerHTML = '';
 
 						// center on marker
 						let marker_rect = el.getBoundingClientRect();
@@ -255,5 +320,7 @@
 
 
 	// init markers
+	let stored_viewed = localStorage.getItem('viewedCottages');
+	stored_viewed  = stored_viewed ? JSON.parse(stored_viewed) : {};
 	const REGION_MARKERS = {};
 	marker_control.init_markers();

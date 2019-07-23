@@ -18,7 +18,14 @@
     <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v4.4.1/mapbox-gl-geocoder.css' type='text/css'/>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>.marker {background-image: url("{{ url_for('static', filename='map-icon.png') }}");}</style>
+    <style>
+        .marker {
+            background-image: url("{{ url_for('static', filename='map-icon.png') }}");
+        }
+        .marker.viewed {
+            background-image: url("{{ url_for('static', filename='map-icon-viewed.png') }}");
+        }
+    </style>
 
 
     <title>Cottage Map</title>
