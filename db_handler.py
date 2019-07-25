@@ -86,6 +86,11 @@ class MySQL_Handler:
         ON DUPLICATE KEY UPDATE last_updated=NOW()""")
         self.commit()
 
+    def get_update_times(self):
+        self.create_log_table()
+        self.cur.execute("SELECT * FROM log_table")
+        return self.cur.fetchall()
+
     def save_offers(self, offers, table_name):
         row = "INSERT INTO {TABLE_NAME} ({columns}) VALUES (DEFAULT,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(
             TABLE_NAME=table_name, columns=",".join(self.columns))
@@ -169,7 +174,7 @@ class Postgres_Handler(MySQL_Handler):
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS log_table (
             table_name VARCHAR(500) PRIMARY KEY NOT NULL ,
-            last_updated TIMESTAMP NOT NULL)""")
+            last_updated TIMESTAMPTZ NOT NULL)""")
 
     def update_log(self, table_name):
         self.create_log_table()

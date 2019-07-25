@@ -7,6 +7,14 @@
     <script type="text/javascript">
 		const REGIONS = JSON.parse({{ regions|tojson }});
 		const REGION_GROUPS = JSON.parse({{ region_groups|tojson }});
+		let UPDATE_TIMES = JSON.parse({{ update_times|tojson }});
+        // load times as Date objects
+		Object.keys(UPDATE_TIMES).reduce(function (obj, x) {
+			UPDATE_TIMES[x] = function() {
+				return new Date(parseFloat(UPDATE_TIMES[x]) *1000);
+            }();
+			return obj;
+		}, {});
     </script>
 
     <script defer src="{{ url_for('static', filename='cottagemap.js') }}"></script>

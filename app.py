@@ -1,5 +1,5 @@
 import json
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_compress import Compress
 
 import db_handler
@@ -28,6 +28,8 @@ def add_header(response):
 @cottages_map.route('/')
 def map_view():
     db = connect_db()
+    update_times = json.dumps({x: y.timestamp() for x, y in db.get_update_times()})
+
     regions = {}
     for table_name in db.get_region_tables():
         cottages = db.get_cottages(table_name, use_b64_image=False)
@@ -41,7 +43,7 @@ def map_view():
     regions = json.dumps(regions, ensure_ascii=False)
     region_groups = json.dumps(GROUPED_REGIONS)
     db.close()
-    return render_template('map.html', regions=regions, region_groups=region_groups)
+    return render_template('map.html', regions=regions, region_groups=region_groups, update_times=update_times)
 
 
 if __name__ == '__main__':

@@ -29,7 +29,7 @@
 
 #layer-select div {
     display: block;
-    padding: 10px;
+    padding: 10px 10px 5px;
     cursor: pointer;
     text-transform: capitalize;
     background-color: rgba(240, 233, 216, 0.6);
@@ -52,8 +52,10 @@
     background-color: rgba(45, 125, 200, 0.6);
 }
 
-#layer-select div input {
-    display: none;
+#layer-select div small {
+    display: block;
+    color: #d26660;
+    margin-top: -4px;
 }
 
 .marker {
@@ -67,6 +69,7 @@
 .mapboxgl-popup {
     max-height: 75vh;
     max-width: 280px !important;
+    z-index: 1;
 }
 
 .mapboxgl-popup-content {

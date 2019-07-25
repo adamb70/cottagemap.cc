@@ -6,6 +6,31 @@
 		return h;
 	};
 
+	function timeSince(date) {
+		const seconds = Math.floor((new Date() - date) / 1000);
+		let interval = Math.floor(seconds / 31536000);
+		if (interval > 1) {
+			return interval + " years";
+		}
+		interval = Math.floor(seconds / 2592000);
+		if (interval > 1) {
+			return interval + " months";
+		}
+		interval = Math.floor(seconds / 86400);
+		if (interval > 1) {
+			return interval + " days";
+		}
+		interval = Math.floor(seconds / 3600);
+		if (interval > 1) {
+			return interval + " hours";
+		}
+		interval = Math.floor(seconds / 60);
+		if (interval > 1) {
+			return interval + " minutes";
+		}
+		return Math.floor(seconds) + " seconds";
+	}
+
 	// Add zoom control
 	map.addControl(new mapboxgl.NavigationControl());
 
@@ -55,11 +80,14 @@
 				label.setAttribute('data-region', region_group);
 				let count = 0;
 
+				let update_time;
 				for (let region of this.options.region_groups[region_group]) {
 					count += REGIONS[region].length;
+					// Just take the update time from the last region, they will all be updated at the same time
+					update_time = UPDATE_TIMES[region]
                 }
 
-                label.innerHTML = region_group + ' (' + count + ')';
+                label.innerHTML = region_group + ' (' + count + ')<small>Updated ' + timeSince(update_time) + ' ago</small>';
 				if (this.options.visible_regions.includes(region_group)) {
 					label.classList.add('checked');
                 }
