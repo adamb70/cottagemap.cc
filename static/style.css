@@ -147,6 +147,9 @@
     color: #f5ff5b;
     text-shadow: 4px 1px 0 #cc1447;
 }
+.marker.new {
+    z-index: 1;
+}
 .marker .new-deal {
     top: 2px;
     left: 2px;
