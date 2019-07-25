@@ -1,6 +1,7 @@
 import time
 import urllib.request
 from urllib.parse import urlparse
+from multiprocessing import Pool
 
 from selenium import webdriver
 from selenium.common.exceptions import ElementClickInterceptedException, ElementNotInteractableException, \
@@ -33,12 +34,20 @@ class SpiderSettings:
 
 
 class Spider:
+    sql = None
+
     def __init__(self, use_postgres=False):
         if use_postgres:
-            self.sql = Postgres_Handler()
+            self.sql_handler = Postgres_Handler
         else:
-            self.sql = MySQL_Handler()
+            self.sql_handler = MySQL_Handler
         self.settings = SpiderSettings()
+
+    def connect_db(self):
+        self.sql = self.sql_handler()
+
+    def disconnect_db(self):
+        self.sql.close()
 
     def parse_results(self, search_results: WebElement, driver, get_b64_images=True):
         offers = []
@@ -150,6 +159,7 @@ class Spider:
         chrome_options.binary_location = settings.GOOGLE_CHROME_BIN
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--headless')
         driver = webdriver.Chrome(executable_path=settings.CHROMEDRIVER_PATH, options=chrome_options)
 
         # Request search page
@@ -210,14 +220,23 @@ class Spider:
                 break
 
         print('saving to db...')
+        self.connect_db()
         self.sql.clear_table(table_name=TABLE_NAME)
-
         self.sql.save_offers(offers, table_name=TABLE_NAME)
+        self.disconnect_db()
 
-        self.sql.close()
 
-
-for region in list(REGION_TABLES.keys()):
+def crawl(region, use_postgres=True, get_b64_images=False):
     print('Gathering late deals from', region)
-    spider = Spider(use_postgres=True)
-    spider.populate_table(region, get_b64_images=False)
+    spider = Spider(use_postgres=use_postgres)
+    spider.populate_table(region, get_b64_images=get_b64_images)
+
+
+def multiprocess_crawl(regions: list, process_count=4):
+    p = Pool(process_count)
+    p.map(crawl, regions)
+
+
+if __name__ == '__main__':
+    multiprocess_crawl(list(REGION_TABLES.keys()), 4)
+
