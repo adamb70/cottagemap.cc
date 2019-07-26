@@ -1,10 +1,11 @@
 import json
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify, make_response
 from flask_compress import Compress
 
 import db_handler
 import settings
-from data_objects import GROUPED_REGIONS
+from data_objects import GROUPED_REGIONS, INV_REGION_TABLES
+from spider import crawl, multiprocess_crawl
 
 cottages_map = Flask(__name__)
 Compress(cottages_map)
@@ -44,6 +45,26 @@ def map_view():
     region_groups = json.dumps(GROUPED_REGIONS)
     db.close()
     return render_template('map.html', regions=regions, region_groups=region_groups, update_times=update_times)
+
+
+@cottages_map.route('/update/', methods=['POST'])
+def update_db():
+    req = request.get_json()
+    regions = req.get('regions', None)
+
+    if not regions:
+        return jsonify(status="fail")
+
+    using_postgres = True if settings.DB_TYPE == 'postgres' else False
+
+    update_regions = []
+    for group in regions:
+        for region in GROUPED_REGIONS[group]:
+            update_regions.append(INV_REGION_TABLES[region])
+
+    multiprocess_crawl(update_regions, settings.PROCESS_COUNT, using_postgres)
+
+    return make_response(jsonify({'response': 'Updating...'}, 200))
 
 
 if __name__ == '__main__':

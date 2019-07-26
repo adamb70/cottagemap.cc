@@ -87,7 +87,7 @@
 					update_time = UPDATE_TIMES[region]
                 }
 
-                label.innerHTML = region_group + ' (' + count + ')<small>Updated ' + timeSince(update_time) + ' ago</small>';
+                label.innerHTML = region_group + ' (' + count + ')<small class="last-updated">Updated ' + timeSince(update_time) + ' ago</small>';
 				if (this.options.visible_regions.includes(region_group)) {
 					label.classList.add('checked');
                 }
@@ -95,6 +95,11 @@
                 this._selectlist.appendChild(label);
                 label.addEventListener('click', this.on_label_click.bind(this, label));
             }
+			const update_button = document.createElement('div');
+			update_button.classList.add('update-button');
+			update_button.innerHTML = 'Update selected regions';
+			this._selectlist.appendChild(update_button);
+			update_button.addEventListener('click', this.on_update_click.bind(this));
 			this._container.appendChild(this._selectlist);
 
 			return this._container;
@@ -138,6 +143,33 @@
                 }
             }
         }
+
+        on_update_click() {
+			const selected_regions = [];
+			for (let r of this._selectlist.querySelectorAll('.checked')) {
+				selected_regions.push(r.getAttribute('data-region'))
+			}
+
+			fetch(UPDATE_URL, {
+				credentials: "include",
+				method: "POST",
+				body: JSON.stringify({'regions': selected_regions}),
+				cache: "no-cache",
+				headers: new Headers({
+					"content-type": "application/json"
+				})
+			}).then(response => {
+				if (response.status !== 200) {
+					console.log(`Looks like there was a problem. Status code: ${response.status}`);
+					return;
+				}
+				response.json().then(data => {
+					for (let r of this._selectlist.querySelectorAll('.checked')) {
+						r.getElementsByClassName('last-updated')[0].innerHTML = 'Update scheduled'
+					}
+				});
+			})
+		}
 
         selectlist_animation_end() {
 			if (this._container.classList.contains('open')) {

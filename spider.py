@@ -232,9 +232,11 @@ def crawl(region, use_postgres=True, get_b64_images=False):
     spider.populate_table(region, get_b64_images=get_b64_images)
 
 
-def multiprocess_crawl(regions: list, process_count=4):
+def multiprocess_crawl(regions: list, process_count=4, use_postgres=False, get_b64_images=False):
+    from itertools import repeat
+
     p = Pool(process_count)
-    p.map(crawl, regions)
+    p.starmap(crawl, list(zip(regions, repeat(use_postgres), repeat(get_b64_images))))
 
 
 if __name__ == '__main__':

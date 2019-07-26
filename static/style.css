@@ -52,10 +52,20 @@
     background-color: rgba(45, 125, 200, 0.6);
 }
 
-#layer-select div small {
+#layer-select div .last-updated {
     display: block;
     color: #d26660;
     margin-top: -4px;
+}
+
+#layer-select .update-button {
+    padding: 10px;
+    font-weight: 600;
+    color: #fff;
+    background-color: rgba(210, 34, 24, 0.6);
+}
+#layer-select .update-button:hover {
+    background-color: rgba(216, 70, 70, 0.6);
 }
 
 .marker {

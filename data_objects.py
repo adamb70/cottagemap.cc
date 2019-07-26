@@ -111,6 +111,8 @@ REGION_TABLES = {
     'northern ireland': "northernireland",
 }
 
+INV_REGION_TABLES = {y: x for x, y in REGION_TABLES.items()}
+
 GROUPED_REGIONS = {
     'north west england': [REGION_TABLES['north west england']],
     'north east england': [REGION_TABLES['north east england']],
