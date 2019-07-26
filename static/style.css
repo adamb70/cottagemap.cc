@@ -75,6 +75,9 @@
     border-radius: 50%;
     cursor: pointer;
 }
+.marker.open {
+    z-index: 1;
+}
 
 .mapboxgl-popup {
     max-height: 75vh;

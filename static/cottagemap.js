@@ -328,7 +328,7 @@
 						// store cottage offers as visited
 						stored_viewed[region][cottage.ref] = [new_deals, new Date()];
 						localStorage.setItem('viewedCottages', JSON.stringify(stored_viewed));
-						el.classList.add('viewed');
+						el.classList.add('viewed', 'open');
 						el.classList.remove('new');
 						el.innerHTML = '';
 
@@ -341,6 +341,9 @@
 						}
 						map.flyTo({center: this.getLngLat(), offset: [0, window.innerHeight * 0.4 * offset_sign]});
 
+					})
+					.on('close', function (pop) {
+						el.classList.remove('open');
 					})
 					.setHTML('<h3 class="cottage-title"><a href="' + cottage.url + '" target="' + cottage.ref + '">' + cottage.title + '</a></h3>'
 						+ '<a href="https://www.google.com/maps/search/?api=1&query=' + cottage.lat + ',' + cottage.lon
