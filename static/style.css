@@ -59,6 +59,7 @@
 }
 
 #layer-select .update-button {
+    display: none; /*TODO: remove this */
     padding: 10px;
     font-weight: 600;
     color: #fff;

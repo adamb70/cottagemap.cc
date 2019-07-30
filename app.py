@@ -57,12 +57,13 @@ def update_db():
 
     using_postgres = True if settings.DB_TYPE == 'postgres' else False
 
-    update_regions = []
-    for group in regions:
-        for region in GROUPED_REGIONS[group]:
-            update_regions.append(INV_REGION_TABLES[region])
+    # TODO: Uncomment this
+    #update_regions = []
+    #for group in regions:
+    #    for region in GROUPED_REGIONS[group]:
+    #        update_regions.append(INV_REGION_TABLES[region])
 
-    multiprocess_crawl(update_regions, settings.PROCESS_COUNT, using_postgres)
+    #multiprocess_crawl(update_regions, settings.PROCESS_COUNT, using_postgres)
 
     return make_response(jsonify({'response': 'Updating...'}, 200))
 
