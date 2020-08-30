@@ -1,7 +1,7 @@
 import os
 
-GOOGLE_CHROME_BIN = ''
-CHROMEDRIVER_PATH = 'chromedriver.exe'
+GOOGLE_CHROME_BIN = os.environ.get('GOOGLE_CHROME_BIN', '')
+CHROMEDRIVER_PATH = os.environ.get('CHROMEDRIVER_PATH ', 'chromedriver.exe')
 
 DB_TYPE = os.environ.get('DB_TYPE', 'postgres')
 
