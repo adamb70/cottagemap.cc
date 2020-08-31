@@ -232,7 +232,7 @@ class Spider:
                 # No pagination
                 break
 
-        print('saving to db...')
+        print(f'saving {len(offers)} items to db...')
         self.connect_db()
         self.sql.clear_table(table_name=TABLE_NAME)
         self.sql.save_offers(offers, table_name=TABLE_NAME)
@@ -255,4 +255,3 @@ def multiprocess_crawl(regions: list, process_count=4, use_postgres=False, get_b
 if __name__ == '__main__':
     print(f'Starting crawl with {settings.PROCESS_COUNT} processes')
     multiprocess_crawl(list(REGION_TABLES.keys()), settings.PROCESS_COUNT, use_postgres=True)
-
