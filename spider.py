@@ -38,11 +38,29 @@ class SpiderSettings:
 class Spider:
     sql = None
 
-    def __init__(self, use_postgres=False):
+    def __init__(self, use_postgres=False, driver='chrome'):
         if use_postgres:
             self.sql_handler = Postgres_Handler
         else:
             self.sql_handler = MySQL_Handler
+        if driver == 'chrome':
+            chrome_options = Options()
+            chrome_options.binary_location = os.environ.get('GOOGLE_CHROME_BIN', '')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--headless')
+            if os.environ.get('USE_DEV_SHM', False):
+                chrome_options.add_argument('--disable-dev-shm-usage')
+            self.driver = webdriver.Chrome(executable_path=os.environ.get('CHROMEDRIVER_PATH', 'chromedriver.exe'),
+                                           options=chrome_options)
+        elif driver == 'firefox':
+            firefox_options = FirefoxOptions()
+            firefox_options.headless = True
+            self.driver = webdriver.Firefox(options=firefox_options, firefox_binary=os.environ.get('FIREFOX_BIN'),
+                                            executable_path=os.environ.get('GECKODRIVER_PATH'))
+        else:
+            raise ValueError(f'Driver {driver} is not of type `firefox` for `chrome`.')
+
         self.settings = SpiderSettings()
 
     def connect_db(self):
@@ -157,34 +175,20 @@ class Spider:
         except KeyError:
             return 'Not a valid region'
 
-        # chrome_options = Options()
-        # chrome_options.binary_location = os.environ.get('GOOGLE_CHROME_BIN', '')
-        # chrome_options.add_argument('--disable-gpu')
-        # chrome_options.add_argument('--no-sandbox')
-        # chrome_options.add_argument('--headless')
-        # if os.environ.get('USE_DEV_SHM', False):
-        #     chrome_options.add_argument('--disable-dev-shm-usage')
-        # driver = webdriver.Chrome(executable_path=os.environ.get('CHROMEDRIVER_PATH', 'chromedriver.exe'), options=chrome_options)
-
-        firefox_options = FirefoxOptions()
-        firefox_options.headless = True
-        driver = webdriver.Firefox(options=firefox_options, firefox_binary=os.environ.get('FIREFOX_BIN'),
-                                   executable_path=os.environ.get('GECKODRIVER_PATH'))
-
         # Request search page
-        driver.get('https://www.independentcottages.co.uk/cottageSearch.php#search_filter')
+        self.driver.get('https://www.independentcottages.co.uk/cottageSearch.php#search_filter')
 
         # Open filters
-        driver.find_element_by_id('opener-btn-side').click()
-        while len(driver.find_elements_by_css_selector('.accordion.active')) > 0:
+        self.driver.find_element_by_id('opener-btn-side').click()
+        while len(self.driver.find_elements_by_css_selector('.accordion.active')) > 0:
             try:
-                driver.find_element_by_css_selector('.accordion.active').click()
+                self.driver.find_element_by_css_selector('.accordion.active').click()
                 time.sleep(0.7)  # wait for animation to avoid misclicks
             except (ElementClickInterceptedException, ElementNotInteractableException):
                 pass
 
         # Fill fields
-        form = driver.find_element_by_id('update-results')
+        form = self.driver.find_element_by_id('update-results')
         form.find_element_by_name('advUserSearch').send_keys(region)
         Select(form.find_element_by_name('sleeps')).select_by_value('2')
         form.find_element_by_id('searchTypeb').click()  # Select late only deals
@@ -207,18 +211,18 @@ class Spider:
 
         offers = []
         while True:
-            results = driver.find_element_by_id('start-of-results')
+            results = self.driver.find_element_by_id('start-of-results')
 
             if results.text.lower().startswith('sorry'):
                 # No results found
                 print(f'No results for {region}')
                 break
 
-            offers.extend(self.parse_results(results, driver, get_b64_images))
+            offers.extend(self.parse_results(results, self.driver, get_b64_images))
 
             # move to next page
             try:
-                paginate_next = driver.find_element_by_id('pagination-list').find_elements_by_css_selector('li')[
+                paginate_next = self.driver.find_element_by_id('pagination-list').find_elements_by_css_selector('li')[
                     -1].find_element_by_css_selector('a')
                 if paginate_next.text.strip().lower().startswith('next'):
                     paginate_next.click()
@@ -237,7 +241,7 @@ class Spider:
 
 def crawl(region, use_postgres=True, get_b64_images=False):
     print('Gathering late deals from', region)
-    spider = Spider(use_postgres=use_postgres)
+    spider = Spider(use_postgres=use_postgres, driver=os.environ.get('DRIVER_TYPE', 'chrome'))
     spider.populate_table(region, get_b64_images=get_b64_images)
 
 
@@ -249,8 +253,6 @@ def multiprocess_crawl(regions: list, process_count=4, use_postgres=False, get_b
 
 
 if __name__ == '__main__':
-    # print(f'Starting crawl with {settings.PROCESS_COUNT} processes')
-    # multiprocess_crawl(list(REGION_TABLES.keys()), settings.PROCESS_COUNT, use_postgres=True)
+    print(f'Starting crawl with {settings.PROCESS_COUNT} processes')
+    multiprocess_crawl(list(REGION_TABLES.keys()), settings.PROCESS_COUNT, use_postgres=True)
 
-    for region in list(REGION_TABLES.keys()):
-        crawl(region, settings.PROCESS_COUNT)
