@@ -1,3 +1,4 @@
+import os
 import time
 import urllib.request
 from urllib.parse import urlparse
@@ -156,11 +157,11 @@ class Spider:
             return 'Not a valid region'
 
         chrome_options = Options()
-        chrome_options.binary_location = settings.GOOGLE_CHROME_BIN
+        chrome_options.binary_location = os.environ.get('GOOGLE_CHROME_BIN', '')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--headless')
-        driver = webdriver.Chrome(executable_path=settings.CHROMEDRIVER_PATH, options=chrome_options)
+        driver = webdriver.Chrome(executable_path=os.environ.get('CHROMEDRIVER_PATH', 'chromedriver.exe'), options=chrome_options)
 
         # Request search page
         driver.get('https://www.independentcottages.co.uk/cottageSearch.php#search_filter')
@@ -240,5 +241,6 @@ def multiprocess_crawl(regions: list, process_count=4, use_postgres=False, get_b
 
 
 if __name__ == '__main__':
+    print(f'Starting crawl with {settings.PROCESS_COUNT} processes')
     multiprocess_crawl(list(REGION_TABLES.keys()), settings.PROCESS_COUNT, use_postgres=True)
 

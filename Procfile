@@ -1,1 +1,1 @@
-web: gunicorn app:cottages_map
+web: python run_app.py
