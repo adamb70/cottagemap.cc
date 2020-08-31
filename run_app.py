@@ -8,6 +8,7 @@ from spider import multiprocess_crawl
 
 
 def crawler_task():
+    print('Starting crawl task')
     multiprocess_crawl(list(REGION_TABLES.keys()), settings.PROCESS_COUNT, use_postgres=True)
 
 
