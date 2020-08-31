@@ -240,5 +240,5 @@ def multiprocess_crawl(regions: list, process_count=4, use_postgres=False, get_b
 
 
 if __name__ == '__main__':
-    multiprocess_crawl(list(REGION_TABLES.keys()), 4)
+    multiprocess_crawl(list(REGION_TABLES.keys()), settings.PROCESS_COUNT, use_postgres=True)
 
