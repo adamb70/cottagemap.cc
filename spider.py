@@ -161,6 +161,8 @@ class Spider:
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--headless')
+        if os.environ.get('USE_DEV_SHM', False):
+            chrome_options.add_argument('--disable-dev-shm-usage')
         driver = webdriver.Chrome(executable_path=os.environ.get('CHROMEDRIVER_PATH', 'chromedriver.exe'), options=chrome_options)
 
         # Request search page

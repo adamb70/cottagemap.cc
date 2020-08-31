@@ -4,8 +4,7 @@ from flask_compress import Compress
 
 import db_handler
 import settings
-from data_objects import GROUPED_REGIONS, INV_REGION_TABLES
-from spider import crawl, multiprocess_crawl
+from data_objects import GROUPED_REGIONS
 
 cottages_map = Flask(__name__)
 Compress(cottages_map)
