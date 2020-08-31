@@ -38,7 +38,7 @@ class SpiderSettings:
 class Spider:
     sql = None
 
-    def __init__(self, use_postgres=False, driver='chrome'):
+    def __init__(self, use_postgres=True, driver='chrome'):
         if use_postgres:
             self.sql_handler = Postgres_Handler
         else:
@@ -61,6 +61,7 @@ class Spider:
         else:
             raise ValueError(f'Driver {driver} is not of type `firefox` for `chrome`.')
 
+        self.search_setup_complete = False
         self.settings = SpiderSettings()
 
     def connect_db(self):
@@ -169,7 +170,46 @@ class Spider:
             offers.append(offer)
         return offers
 
-    def populate_table(self, region, get_b64_images=True):
+    def search(self, region):
+        # Request search page
+        self.driver.get('https://www.independentcottages.co.uk/cottageSearch.php#search_filter')
+
+        # Open filters
+        self.driver.find_element_by_id('opener-btn-side').click()
+        while len(self.driver.find_elements_by_css_selector('.accordion.active')) > 0:
+            try:
+                self.driver.find_element_by_css_selector('.accordion.active').click()
+                time.sleep(0.7)  # wait for animation to avoid misclicks
+            except (ElementClickInterceptedException, ElementNotInteractableException):
+                pass
+
+        form = self.driver.find_element_by_id('update-results')
+        if not self.search_setup_complete:
+            # Fill fields
+            form.find_element_by_name('advUserSearch').send_keys(region)
+            Select(form.find_element_by_name('sleeps')).select_by_value('2')
+            form.find_element_by_id('searchTypeb').click()  # Select late only deals
+
+            if self.settings.WIFI:
+                form.find_element_by_id('broadband').click()
+            if self.settings.PARKING:
+                form.find_element_by_id('offRoadParking').click()
+            if self.settings.WASHING:
+                form.find_element_by_id('washingMachine').click()
+            if self.settings.KINGSIZE:
+                form.find_element_by_id('kingsizeBed').click()
+            if self.settings.POOL:
+                form.find_element_by_id('swimmingPool').click()
+            if self.settings.HOTTUB:
+                form.find_element_by_id('hotTub').click()
+            self.search_setup_complete = True
+        else:
+            # Clear the previous search request before entering a new one
+            form.find_element_by_name('advUserSearch').clear()
+            form.find_element_by_name('advUserSearch').send_keys(region)
+        form.find_element_by_class_name('btn-orange').click()
+
+    def populate_table(self, region, get_b64_images=False):
         try:
             TABLE_NAME = REGION_TABLES[region]
         except KeyError:
@@ -187,27 +227,8 @@ class Spider:
             except (ElementClickInterceptedException, ElementNotInteractableException):
                 pass
 
-        # Fill fields
-        form = self.driver.find_element_by_id('update-results')
-        form.find_element_by_name('advUserSearch').send_keys(region)
-        Select(form.find_element_by_name('sleeps')).select_by_value('2')
-        form.find_element_by_id('searchTypeb').click()  # Select late only deals
-
-        if self.settings.WIFI:
-            form.find_element_by_id('broadband').click()
-        if self.settings.PARKING:
-            form.find_element_by_id('offRoadParking').click()
-        if self.settings.WASHING:
-            form.find_element_by_id('washingMachine').click()
-        if self.settings.KINGSIZE:
-            form.find_element_by_id('kingsizeBed').click()
-        if self.settings.POOL:
-            form.find_element_by_id('swimmingPool').click()
-        if self.settings.HOTTUB:
-            form.find_element_by_id('hotTub').click()
-
-        # Submit form
-        form.find_element_by_class_name('btn-orange').click()
+        # Perform search
+        self.search(region)
 
         offers = []
         while True:
@@ -245,7 +266,7 @@ def crawl(region, use_postgres=True, get_b64_images=False):
     spider.populate_table(region, get_b64_images=get_b64_images)
 
 
-def multiprocess_crawl(regions: list, process_count=4, use_postgres=False, get_b64_images=False):
+def multiprocess_crawl(regions: list, process_count=4, use_postgres=True, get_b64_images=False):
     from itertools import repeat
 
     p = Pool(process_count)
