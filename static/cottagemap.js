@@ -112,6 +112,11 @@
 			update_button.addEventListener('click', this.on_update_click.bind(this));
 			this._container.appendChild(this._selectlist);
 
+			// Open menu on first app run. Set flag in local storage
+			if (JSON.parse(localStorage.getItem('layersClosed')) !== true) {
+				this._container.classList.add('open');
+			}
+
 			return this._container;
 		}
 
@@ -205,6 +210,8 @@
 				this._container.classList.remove('open');
 				this._selectlist.classList.add('fadeOutLayerSelect');
 				document.removeEventListener('click', this._bound_listener)
+				// set session flag
+				localStorage.setItem('layersClosed', JSON.stringify(true))
             } else {
 				// open
 				this._container.classList.add('open');
