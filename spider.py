@@ -61,6 +61,7 @@ class Spider:
         else:
             raise ValueError(f'Driver {driver} is not of type `firefox` for `chrome`.')
 
+        self.driver.set_window_size(1920, 1080)
         self.search_setup_complete = False
         self.settings = SpiderSettings()
 
@@ -175,7 +176,13 @@ class Spider:
         self.driver.get('https://www.independentcottages.co.uk/cottageSearch.php#search_filter')
 
         # Open filters
-        self.driver.find_element_by_id('opener-btn-side').click()
+        try:
+            self.driver.find_element_by_css_selector('#search-form-container[style*="display: none;"]')
+            self.driver.find_element_by_id('opener-btn-side').click()
+        except NoSuchElementException:
+            # Don't need to open the search form
+            pass
+
         while len(self.driver.find_elements_by_css_selector('.accordion.active')) > 0:
             try:
                 self.driver.find_element_by_css_selector('.accordion.active').click()
