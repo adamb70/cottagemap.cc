@@ -225,18 +225,6 @@ class Spider:
         except KeyError:
             return 'Not a valid region'
 
-        # Request search page
-        self.driver.get('https://www.independentcottages.co.uk/cottageSearch.php#search_filter')
-
-        # Open filters
-        self.driver.find_element_by_id('opener-btn-side').click()
-        while len(self.driver.find_elements_by_css_selector('.accordion.active')) > 0:
-            try:
-                self.driver.find_element_by_css_selector('.accordion.active').click()
-                time.sleep(0.7)  # wait for animation to avoid misclicks
-            except (ElementClickInterceptedException, ElementNotInteractableException):
-                pass
-
         # Perform search
         self.search(region)
 
