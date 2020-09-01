@@ -71,7 +71,10 @@ class Spider:
     def disconnect_db(self):
         self.sql.close()
 
-    def parse_results(self, search_results: WebElement, driver, get_b64_images=True):
+    def quit_driver(self):
+        self.driver.quit()
+
+    def parse_results(self, search_results: WebElement, driver, get_b64_images=False):
         offers = []
         for cottage in search_results.find_elements_by_class_name('holiday-cottage-item'):
             offer = OfferRow()
@@ -271,6 +274,7 @@ def crawl(region, use_postgres=True, get_b64_images=False):
     print('Gathering late deals from', region)
     spider = Spider(use_postgres=use_postgres, driver=os.environ.get('DRIVER_TYPE', 'chrome'))
     spider.populate_table(region, get_b64_images=get_b64_images)
+    spider.quit_driver()
 
 
 def multiprocess_crawl(regions: list, process_count=4, use_postgres=True, get_b64_images=False):
