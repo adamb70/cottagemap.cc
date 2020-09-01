@@ -24,7 +24,10 @@
     display: block;
 }
 .open .mapboxgl-ctrl-group {
-    background-color: #c7c7c7;
+    background-color: #d4d1c9;
+}
+.mapboxgl-ctrl {
+    background-color: #faf7f0;
 }
 
 #layer-select div {
@@ -32,7 +35,7 @@
     padding: 10px 10px 5px;
     cursor: pointer;
     text-transform: capitalize;
-    background-color: rgba(240, 233, 216, 0.6);
+    background-color: rgba(250, 247, 240, 0.6);
     border-bottom: solid 1px rgba(202, 202, 202, 0.6);
 }
 
@@ -45,7 +48,7 @@
 }
 
 #layer-select div.checked {
-    background-color: rgba(90, 157, 218, 0.6);
+    background-color: rgba(117, 190, 234, 0.6);
 }
 
 #layer-select div.checked:hover {
