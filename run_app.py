@@ -19,14 +19,14 @@ def crawler_task():
 
 def keep_awake():
     print('Pinging server...')
-    os.system('ping -c 1 https://cottagemap.cc')
+    os.system('curl -s https://cottagemap.cc > /dev/null')
 
 
 def start_scheduler():
     # Attention: you cannot use a blocking scheduler here as that will block the script from proceeding.
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=crawler_task, trigger=CronTrigger(hour=1, day_of_week='mon'))
-    scheduler.add_job(func=keep_awake, trigger=CronTrigger(minute='*/15'))
+    scheduler.add_job(func=keep_awake, trigger=CronTrigger.from_crontab('*/15 * * * *'))
     scheduler.start()
 
 
