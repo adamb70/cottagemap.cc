@@ -67,5 +67,10 @@ def update_db():
     return make_response(jsonify({'response': 'Updating...'}, 200))
 
 
+@cottages_map.route('/wakemydyno.txt')
+def keep_awake():
+    return make_response()
+
+
 if __name__ == '__main__':
     cottages_map.run()
