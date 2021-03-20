@@ -1,6 +1,6 @@
 Flask==1.1.2
 Flask-Compress==1.5.0
-Jinja2==2.11.2
+Jinja2==2.11.3
 selenium==3.141.0
 mysqlclient==2.0.1
 psycopg2==2.8.5
